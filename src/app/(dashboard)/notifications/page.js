@@ -1,6 +1,7 @@
 // app/notifications/page.js
+import { auth } from '@/auth';
 import { Ellipsis } from 'lucide-react';
-export default function Notifications() {
+export default async function  Notifications()  {
   const yesterdayMeetings = [
     {
       id: 1,
@@ -65,6 +66,9 @@ export default function Notifications() {
       </div>
     </div>
   );
+
+  const session = await auth();
+  console.log("Session:", session);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">

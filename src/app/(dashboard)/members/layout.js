@@ -20,12 +20,13 @@ import {
   Typography
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { MemberFormDialog } from "./MemberFormDialog";
 
 export default function Layout({ children }) {
   const pathname = usePathname();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [email, setEmail] = useState("");
-  const [selectedRole, setSelectedRole] = useState("");
+  // const [selectedRole, setSelectedRole] = useState("");
 
   const tabs = [
     { id: "students", label: "Students", href: "/members/students" },
@@ -35,20 +36,26 @@ export default function Layout({ children }) {
 
   const roles = ["Student", "Volunteer", "Expert"];
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Handle form submission here
-    console.log("Email:", email, "Role:", selectedRole);
-    // Reset form and close dialog
-    setEmail("");
-    setSelectedRole("");
-    setIsDialogOpen(false);
+  // const handleSubmit = (e) => {
+  //   e.preventDefault();
+  //   // Handle form submission here
+  //   console.log("Email:", email, "Role:", selectedRole);
+  //   // Reset form and close dialog
+  //   setEmail("");
+  //   setSelectedRole("");
+  //   setIsDialogOpen(false);
+  // };
+
+  const handleSubmit = (formData) => {
+    console.log('Form submitted:', formData);
+    // Here you would typically send the data to your API
+    alert(`${formData.role} added successfully!`);
   };
 
   const handleClose = () => {
     setIsDialogOpen(false);
-    setEmail("");
-    setSelectedRole("");
+    // setEmail("");
+    // setSelectedRole("");
   };
 
   return (
@@ -85,7 +92,7 @@ export default function Layout({ children }) {
         <main>{children}</main>
 
         {/* Material-UI Dialog */}
-        <Dialog
+        {/* <Dialog
           open={isDialogOpen}
           onClose={handleClose}
           maxWidth="sm"
@@ -223,7 +230,8 @@ export default function Layout({ children }) {
               </Button>
             </DialogActions>
           </form>
-        </Dialog>
+        </Dialog> */}
+        <MemberFormDialog open={isDialogOpen} onClose={handleClose} onSubmit={handleSubmit} />
       </div>
     </div>
   );

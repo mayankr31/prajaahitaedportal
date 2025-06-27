@@ -1,34 +1,50 @@
-"use client";
-
-import React, { useState } from "react";
+// app/signup/page.js (Server Component)
+import React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 
 const SignUpPage = () => {
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    companyEmail: "",
-    password: "",
-    confirmPassword: "",
-    companyName: "",
-    phoneNumber: "",
-    country: "",
-  });
+  async function handleSubmit(formData) {
+    "use server";
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+    try {
+      // Extract form data
+      const name = `${formData.get("firstName")} ${formData.get("lastName")}`;
+      const companyEmail = formData.get("companyEmail");
+      const password = formData.get("password");
+      const confirmPassword = formData.get("confirmPassword");
+      const companyName = formData.get("companyName");
+      const phoneNumber = formData.get("phoneNumber");
+      const country = formData.get("country");
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Form submitted:", formData);
-    // Handle form submission logic here
-  };
+      if (password !== confirmPassword) {
+        throw new Error("Passwords do not match");
+      }
+
+      const res = await prisma.user.create({
+        data: {
+          name,
+          email: companyEmail,
+          password, // Make sure you hash the password before storing it
+          companyName,
+          phoneNumber,
+          country,
+        },
+      });
+
+      console.log("User created:", res);
+
+      
+    } catch (error) {
+      console.error("Error creating user:", error);
+      // Handle error (e.g. return error message to user interface)
+      return;
+    }
+    // Redirect only after successful creation
+      redirect("/login");
+  }
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -73,15 +89,13 @@ const SignUpPage = () => {
                 Sign-up now
               </h3>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form action={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <input
                       type="text"
                       name="firstName"
                       placeholder="First Name*"
-                      value={formData.firstName}
-                      onChange={handleInputChange}
                       className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                       required
                     />
@@ -91,8 +105,6 @@ const SignUpPage = () => {
                       type="text"
                       name="lastName"
                       placeholder="Last Name*"
-                      value={formData.lastName}
-                      onChange={handleInputChange}
                       className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                       required
                     />
@@ -104,8 +116,6 @@ const SignUpPage = () => {
                     type="email"
                     name="companyEmail"
                     placeholder="Company Email*"
-                    value={formData.companyEmail}
-                    onChange={handleInputChange}
                     className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                     required
                   />
@@ -117,8 +127,6 @@ const SignUpPage = () => {
                       type="password"
                       name="password"
                       placeholder="Password*"
-                      value={formData.password}
-                      onChange={handleInputChange}
                       className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                       required
                     />
@@ -128,8 +136,6 @@ const SignUpPage = () => {
                       type="password"
                       name="confirmPassword"
                       placeholder="Confirm Password*"
-                      value={formData.confirmPassword}
-                      onChange={handleInputChange}
                       className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                       required
                     />
@@ -142,8 +148,6 @@ const SignUpPage = () => {
                       type="text"
                       name="companyName"
                       placeholder="Company Name*"
-                      value={formData.companyName}
-                      onChange={handleInputChange}
                       className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                       required
                     />
@@ -153,8 +157,6 @@ const SignUpPage = () => {
                       type="tel"
                       name="phoneNumber"
                       placeholder="Phone Number*"
-                      value={formData.phoneNumber}
-                      onChange={handleInputChange}
                       className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                       required
                     />
@@ -164,8 +166,6 @@ const SignUpPage = () => {
                 <div>
                   <select
                     name="country"
-                    value={formData.country}
-                    onChange={handleInputChange}
                     className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                     required
                   >
