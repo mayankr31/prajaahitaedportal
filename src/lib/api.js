@@ -1,3 +1,4 @@
+
 // Group API functions
 export const groupAPI = {
   // Get all groups

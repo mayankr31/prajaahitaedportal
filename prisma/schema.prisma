@@ -15,6 +15,7 @@ model User {
   email         String          @unique
   emailVerified DateTime?
   password      String?
+  role          String?         
   image         String?
   companyName   String?
   phoneNumber   String?
@@ -95,32 +96,6 @@ model Group {
 
   @@map("groups")
 }
-
-// model Programme {
-//   id               String @id @default(cuid())
-//   students         Int    @default(0)
-//   volunteers       Int    @default(0)
-//   specialEducators Int    @default(0) @map("special_educators")
-//   imageUrl         String?
-//   createdAt        DateTime @default(now())
-//   updatedAt        DateTime @updatedAt
-  
-//   // Foreign key to Group
-//   groupId String @map("group_id")
-//   group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
-
-//   @@map("programmes")
-// }
-
-// model Organisation {
-//   id        String   @id @default(cuid())
-//   name      String
-//   imageUrl  String?
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt
-
-//   @@map("organisations")
-// }
 
 model Programme {
   id               String @id @default(cuid())

@@ -1,3 +1,4 @@
+// src\auth.js
 import NextAuth, { CredentialsSignin } from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
@@ -72,3 +73,4 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     },
   },
 });
+

@@ -18,6 +18,7 @@ const SignUpPage = () => {
       const companyName = formData.get("companyName");
       const phoneNumber = formData.get("phoneNumber");
       const country = formData.get("country");
+      const role = formData.get("role");
 
       if (password !== confirmPassword) {
         throw new Error("Passwords do not match");
@@ -31,6 +32,7 @@ const SignUpPage = () => {
           companyName,
           phoneNumber,
           country,
+          role,
         },
       });
 
@@ -163,20 +165,34 @@ const SignUpPage = () => {
                   </div>
                 </div>
 
-                <div>
-                  <select
-                    name="country"
-                    className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
-                    required
-                  >
-                    <option value="">Country*</option>
-                    <option value="US">United States</option>
-                    <option value="IN">India</option>
-                    <option value="UK">United Kingdom</option>
-                    <option value="CA">Canada</option>
-                    <option value="AU">Australia</option>
-                    {/* Add more countries as needed */}
-                  </select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <select
+                      name="country"
+                      className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                      required
+                    >
+                      <option value="">Country*</option>
+                      <option value="US">United States</option>
+                      <option value="IN">India</option>
+                      <option value="UK">United Kingdom</option>
+                      <option value="CA">Canada</option>
+                      <option value="AU">Australia</option>
+                      {/* Add more countries as needed */}
+                    </select>
+                  </div>
+                  <div>
+                    <select
+                      name="role"
+                      className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                      required
+                    >
+                      <option value="">Role*</option>
+                      <option value="student">Student</option>
+                      <option value="volunteer">Volunteer</option>
+                      <option value="expert">Expert</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="pt-4">

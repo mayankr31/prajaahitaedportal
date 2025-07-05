@@ -1,3 +1,6 @@
+import { NextResponse } from 'next/server';
+import {prisma} from '@/lib/prisma';
+
 // GET all activities with prerequisites
 export async function GET(request) {
   try {
