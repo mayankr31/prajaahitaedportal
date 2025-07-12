@@ -15,6 +15,7 @@ model User {
   email         String          @unique
   emailVerified DateTime?
   password      String?
+  age           Int?
   role          String?         
   image         String?
   companyName   String?
@@ -24,6 +25,10 @@ model User {
   sessions      Session[]
   // Optional for WebAuthn support
   Authenticator Authenticator[]
+
+  studentProfile Student?
+  volunteerProfile Volunteer?
+  expertProfile Expert?
  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -99,6 +104,7 @@ model Group {
 
 model Programme {
   id               String @id @default(cuid())
+  name             String
   students         Int    @default(0)
   volunteers       Int    @default(0)
   specialEducators Int    @default(0) @map("special_educators")
@@ -157,6 +163,8 @@ model Meeting {
 
 model Student {
   id                     String        @id @default(cuid())
+  userId                 String        @unique
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   name                   String
   age                    Int
   email                  String        @unique
@@ -189,6 +197,8 @@ model Student {
 
 model Volunteer {
   id                      String        @id @default(cuid())
+  userId                  String        @unique
+  user                    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   name                    String
   age                     Int
   email                   String        @unique
@@ -220,6 +230,8 @@ model Volunteer {
 
 model Expert {
   id                      String        @id @default(cuid())
+  userId                  String        @unique
+  user                    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   name                    String
   age                     Int
   email                   String        @unique
@@ -248,6 +260,10 @@ model Activity {
   imageUrl      String
   title         String
   date          DateTime
+  pdfUrl        String?
+  time          String?         //store time as string (e.g., "10:00 AM")
+  category      String?
+  feedback      String?         // Text field for feedback  
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   

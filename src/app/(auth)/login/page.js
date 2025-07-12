@@ -589,19 +589,19 @@ export default function LoginPage() {
                   </div>
 
                   {/* Divider */}
-                  <div className="relative pt-3">
+                  {/* <div className="relative pt-3">
                     <div className="relative flex justify-center text-[11px] font-bold ">
                       <span className="px-2 bg-white text-gray-500">OR</span>
                     </div>
-                  </div>
+                  </div> */}
                 </form>
 
                 {/* Google Sign Up Button - Client Component */}
-                <div className="px-12">
+                {/* <div className="px-12">
                   <div className="flex justify-center pt-3">
                     <GoogleSignUpButton />
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>

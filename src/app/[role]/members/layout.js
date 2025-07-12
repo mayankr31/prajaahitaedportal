@@ -39,7 +39,7 @@ export default function Layout({ children }) {
   const canAddMembers = () => {
     // You can customize this logic based on your requirements
     // For example, only volunteers and experts can add members
-    return role === 'volunteer' || role === 'expert';
+    return role === 'admin';
   };
 
   return (
@@ -63,15 +63,7 @@ export default function Layout({ children }) {
               </Link>
             ))}
           </div>
-          {/* <button
-            onClick={() => setIsDialogOpen(true)}
-            className="flex items-center text-sm space-x-2 bg-[#2F699A] text-white px-4 py-2 rounded-lg hover:bg-[#25547b] transition-colors"
-          >
-            <Plus size={18} />
-            <span>Add Member</span>
-          </button> */}
-           {/* Only show Add Member button if user has permission */}
-          {canAddMembers() && (
+          {/* {canAddMembers() && (
             <button
               onClick={() => setIsDialogOpen(true)}
               className="flex items-center text-sm space-x-2 bg-[#2F699A] text-white px-4 py-2 rounded-lg hover:bg-[#25547b] transition-colors"
@@ -79,7 +71,7 @@ export default function Layout({ children }) {
               <Plus size={18} />
               <span>Add Member</span>
             </button>
-          )}
+          )} */}
         </div>
 
         {/* Main Content */}

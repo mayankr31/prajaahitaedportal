@@ -443,3 +443,62 @@ export const expertAPI = {
     return response.json()
   }
 }
+
+export const userAPI = {
+  // Get all users with pagination and filters
+  async getAll(page = 1, limit = 10, search = '', role = null, status = null) {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(search && { search }),
+      ...(role && { role }),
+      ...(status && { status })
+    })
+    const response = await fetch(`/api/users?${params}`)
+    return response.json()
+  },
+
+  async getById(id) {
+    const response = await fetch(`/api/users/${id}`);
+    return response.json();
+  },
+
+  // Create a new user (for signup)
+  async create(data) {
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return response.json();
+  },
+
+  // Update a user by ID (including their associated role profile)
+  async update(id, data) {
+    const response = await fetch(`/api/users/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return response.json();
+  },
+
+  // Delete a user by ID (including their associated role profile)
+  async delete(id) {
+    const response = await fetch(`/api/users/${id}`, {
+      method: 'DELETE'
+    });
+    return response.json();
+  },
+  
+  // Get users by role
+  async getByRole(role, page = 1, limit = 10) {
+    const params = new URLSearchParams({
+      role,
+      page: page.toString(),
+      limit: limit.toString()
+    })
+    const response = await fetch(`/api/users?${params}`)
+    return response.json()
+  }
+}

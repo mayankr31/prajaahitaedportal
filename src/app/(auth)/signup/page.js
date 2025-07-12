@@ -19,33 +19,105 @@ const SignUpPage = () => {
       const phoneNumber = formData.get("phoneNumber");
       const country = formData.get("country");
       const role = formData.get("role");
+      const age = formData.get("age");
 
       if (password !== confirmPassword) {
         throw new Error("Passwords do not match");
       }
 
-      const res = await prisma.user.create({
-        data: {
-          name,
-          email: companyEmail,
-          password, // Make sure you hash the password before storing it
-          companyName,
-          phoneNumber,
-          country,
-          role,
-        },
+      // Use a transaction to ensure both user and profile are created together
+      const result = await prisma.$transaction(async (tx) => {
+        // Create the user first
+        const user = await tx.user.create({
+          data: {
+            name,
+            email: companyEmail,
+            password, // Make sure you hash the password before storing it
+            companyName,
+            phoneNumber,
+            country,
+            role,
+            age: parseInt(age),
+          },
+        });
+
+        // Create the corresponding profile based on role
+        let profile;
+        switch (role) {
+          case "student":
+            profile = await tx.student.create({
+              data: {
+                userId: user.id,
+                name: user.name,
+                age: user.age,
+                email: user.email,
+                // Optional fields can be added later through profile completion
+                skills: null,
+                areaOfInterest: null,
+                readingCapacity: null,
+                preferredLanguages: null,
+                fineMotorDevelopment: null,
+                interactionCapacity: null,
+                onlineClassExperience: null,
+                attentionSpan: null,
+                triggeringFactors: null,
+                happyMoments: null,
+                disability: null,
+              },
+            });
+            break;
+
+          case "volunteer":
+            profile = await tx.volunteer.create({
+              data: {
+                userId: user.id,
+                name: user.name,
+                age: user.age,
+                email: user.email,
+                contactNumber: user.phoneNumber, // Use phone number from user
+                // Optional fields can be added later through profile completion
+                educationalQualification: null,
+                preferredLanguages: null,
+                experience: null,
+                profession: null,
+                whatMotivatesYou: null,
+                feedback: null,
+              },
+            });
+            break;
+
+          case "expert":
+            profile = await tx.expert.create({
+              data: {
+                userId: user.id,
+                name: user.name,
+                age: user.age,
+                email: user.email,
+                // Optional fields can be added later through profile completion
+                profession: null,
+                educationalQualification: null,
+                feedback: null,
+              },
+            });
+            break;
+
+          default:
+            throw new Error("Invalid role specified");
+        }
+
+        return { user, profile };
       });
 
-      console.log("User created:", res);
+      console.log("User and profile created:", result);
 
-      
     } catch (error) {
-      console.error("Error creating user:", error);
+      console.error("Error creating user and profile:", error);
       // Handle error (e.g. return error message to user interface)
       return;
     }
+    
     // Redirect only after successful creation
-      redirect("/login");
+    redirect("/login");
   }
 
   return (
@@ -193,6 +265,18 @@ const SignUpPage = () => {
                       <option value="expert">Expert</option>
                     </select>
                   </div>
+                </div>
+
+                <div>
+                  <input
+                    type="number"
+                    name="age"
+                    placeholder="Age*"
+                    min="1"
+                    max="120"
+                    className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                    required
+                  />
                 </div>
 
                 <div className="pt-4">

@@ -13,7 +13,7 @@
 //   const [isAllDay, setIsAllDay] = useState(false);
 //   const [isSubmitting, setIsSubmitting] = useState(false);
 //   const [submitMessage, setSubmitMessage] = useState("");
-  
+
 //   // Get today's date in YYYY-MM-DD format
 //   const getTodayDate = () => {
 //     const today = new Date();
@@ -105,19 +105,19 @@
 //     const { name, value } = e.target;
 //     setFormData((prev) => {
 //       const newFormData = { ...prev, [name]: value };
-      
+
 //       // If start time is changed and it's after end time, adjust end time
 //       if (name === "startTime" && value >= prev.endTime) {
 //         const startHour = parseInt(value.split(':')[0]);
 //         const startMinute = parseInt(value.split(':')[1]);
 //         const endTime = new Date();
 //         endTime.setHours(startHour, startMinute + 30, 0, 0);
-        
+
 //         const endHour = endTime.getHours().toString().padStart(2, '0');
 //         const endMinuteStr = endTime.getMinutes().toString().padStart(2, '0');
 //         newFormData.endTime = `${endHour}:${endMinuteStr}`;
 //       }
-      
+
 //       return newFormData;
 //     });
 //   };
@@ -149,10 +149,10 @@
 //       const meetingData = {
 //         title: formData.title,
 //         date: formData.date,
-//         startDateTime: isAllDay 
+//         startDateTime: isAllDay
 //           ? createStartOfDayISO(formData.date)
 //           : createISODateTime(formData.date, formData.startTime),
-//         endDateTime: isAllDay 
+//         endDateTime: isAllDay
 //           ? createEndOfDayISO(formData.date)
 //           : createISODateTime(formData.date, formData.endTime),
 //         isAllDay: isAllDay,
@@ -173,9 +173,9 @@
 //       if (result.success) {
 //         // Show success alert
 //         alert("Meeting created successfully!");
-        
+
 //         console.log("Meeting created:", result.data);
-        
+
 //         // Call parent callback if provided
 //         if (onSubmit) {
 //           onSubmit(result.data);
@@ -218,8 +218,8 @@
 //         {/* Success/Error Message */}
 //         {submitMessage && (
 //           <div className={`p-4 rounded-md ${
-//             submitMessage.includes("Error") 
-//               ? "bg-red-50 text-red-700 border border-red-200" 
+//             submitMessage.includes("Error")
+//               ? "bg-red-50 text-red-700 border border-red-200"
 //               : "bg-green-50 text-green-700 border border-green-200"
 //           }`}>
 //             {submitMessage}
@@ -507,14 +507,23 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { CalendarDays, MapPin, Plus, X, Search, User, UserCheck } from "lucide-react";
+import {
+  CalendarDays,
+  MapPin,
+  Plus,
+  X,
+  Search,
+  User,
+  UserCheck,
+} from "lucide-react";
 import { meetingAPI, studentAPI, volunteerAPI, expertAPI } from "@/lib/api";
+import { useSession } from "next-auth/react";
 
 const CreateMeetingForm = ({ onSubmit }) => {
   const router = useRouter();
   const params = useParams();
   const role = params.role;
-  
+
   // State for all users and participant selection
   const [allUsers, setAllUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -522,16 +531,16 @@ const CreateMeetingForm = ({ onSubmit }) => {
   const [participantSearchTerm, setParticipantSearchTerm] = useState("");
   const [showParticipantDropdown, setShowParticipantDropdown] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
-  const [currentUserEmail, setCurrentUserEmail] = useState("");
-  
+  // const [currentUserEmail, setCurrentUserEmail] = useState("");
+
   const [isAllDay, setIsAllDay] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
-  
+
   // Get today's date in YYYY-MM-DD format
   const getTodayDate = () => {
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    return today.toISOString().split("T")[0];
   };
 
   const [formData, setFormData] = useState({
@@ -550,25 +559,28 @@ const CreateMeetingForm = ({ onSubmit }) => {
   const timeOptions = Array.from({ length: 48 }, (_, i) => {
     const hour = Math.floor(i / 2);
     const minute = i % 2 === 0 ? "00" : "30";
-    return `${hour.toString().padStart(2, '0')}:${minute}`;
+    return `${hour.toString().padStart(2, "0")}:${minute}`;
   });
+
+  const { data: session } = useSession();
 
   // Fetch all users on component mount
   useEffect(() => {
     fetchAllUsers();
-    // Get current user email from localStorage or session
-    // You might need to adjust this based on your auth system
-    const userEmail = localStorage.getItem('userEmail') || 'creator@example.com';
-    setCurrentUserEmail(userEmail);
   }, []);
 
   // Filter users based on search term
   useEffect(() => {
     if (participantSearchTerm) {
-      const filtered = allUsers.filter(user =>
-        user.name.toLowerCase().includes(participantSearchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(participantSearchTerm.toLowerCase()) ||
-        user.role.toLowerCase().includes(participantSearchTerm.toLowerCase())
+      const filtered = allUsers.filter(
+        (user) =>
+          user.name
+            .toLowerCase()
+            .includes(participantSearchTerm.toLowerCase()) ||
+          user.email
+            .toLowerCase()
+            .includes(participantSearchTerm.toLowerCase()) ||
+          user.role.toLowerCase().includes(participantSearchTerm.toLowerCase())
       );
       setFilteredUsers(filtered);
     } else {
@@ -580,52 +592,59 @@ const CreateMeetingForm = ({ onSubmit }) => {
     setLoadingUsers(true);
     try {
       // Fetch all user types
-      const [studentsResponse, volunteersResponse, expertsResponse] = await Promise.all([
-        studentAPI.getAll(1, 1000), // Get all students
-        volunteerAPI.getAll(1, 1000), // Get all volunteers
-        expertAPI.getAll(1, 1000) // Get all experts
-      ]);
+      const [studentsResponse, volunteersResponse, expertsResponse] =
+        await Promise.all([
+          studentAPI.getAll(1, 1000), // Get all students
+          volunteerAPI.getAll(1, 1000), // Get all volunteers
+          expertAPI.getAll(1, 1000), // Get all experts
+        ]);
 
       const users = [];
 
       // Process students
       if (studentsResponse.success && studentsResponse.data) {
-        const students = Array.isArray(studentsResponse.data) ? studentsResponse.data : studentsResponse.data.students || [];
-        students.forEach(student => {
+        const students = Array.isArray(studentsResponse.data)
+          ? studentsResponse.data
+          : studentsResponse.data.students || [];
+        students.forEach((student) => {
           users.push({
             id: student.id,
             name: student.name,
             email: student.email,
-            role: 'Student',
-            type: 'student'
+            role: "Student",
+            type: "student",
           });
         });
       }
 
       // Process volunteers
       if (volunteersResponse.success && volunteersResponse.data) {
-        const volunteers = Array.isArray(volunteersResponse.data) ? volunteersResponse.data : volunteersResponse.data.volunteers || [];
-        volunteers.forEach(volunteer => {
+        const volunteers = Array.isArray(volunteersResponse.data)
+          ? volunteersResponse.data
+          : volunteersResponse.data.volunteers || [];
+        volunteers.forEach((volunteer) => {
           users.push({
             id: volunteer.id,
             name: volunteer.name,
             email: volunteer.email,
-            role: 'Volunteer',
-            type: 'volunteer'
+            role: "Volunteer",
+            type: "volunteer",
           });
         });
       }
 
       // Process experts
       if (expertsResponse.success && expertsResponse.data) {
-        const experts = Array.isArray(expertsResponse.data) ? expertsResponse.data : expertsResponse.data.experts || [];
-        experts.forEach(expert => {
+        const experts = Array.isArray(expertsResponse.data)
+          ? expertsResponse.data
+          : expertsResponse.data.experts || [];
+        experts.forEach((expert) => {
           users.push({
             id: expert.id,
             name: expert.name,
             email: expert.email,
-            role: 'Expert',
-            type: 'expert'
+            role: "Expert",
+            type: "expert",
           });
         });
       }
@@ -633,15 +652,15 @@ const CreateMeetingForm = ({ onSubmit }) => {
       setAllUsers(users);
       setFilteredUsers(users);
     } catch (error) {
-      console.error('Error fetching users:', error);
-      setSubmitMessage('Error loading users. Please try again.');
+      console.error("Error fetching users:", error);
+      setSubmitMessage("Error loading users. Please try again.");
     } finally {
       setLoadingUsers(false);
     }
   };
 
   const handleParticipantSelect = (user) => {
-    if (!selectedParticipants.find(p => p.id === user.id)) {
+    if (!selectedParticipants.find((p) => p.id === user.id)) {
       setSelectedParticipants([...selectedParticipants, user]);
     }
     setParticipantSearchTerm("");
@@ -649,19 +668,21 @@ const CreateMeetingForm = ({ onSubmit }) => {
   };
 
   const removeParticipant = (userId) => {
-    setSelectedParticipants(selectedParticipants.filter(p => p.id !== userId));
+    setSelectedParticipants(
+      selectedParticipants.filter((p) => p.id !== userId)
+    );
   };
 
   const addCurrentUserAsParticipant = () => {
     const currentUser = {
-      id: 'current-user',
-      name: 'Me (Meeting Creator)',
-      email: currentUserEmail,
+      id: "current-user",
+      name: session?.user?.name || "Me (Meeting Creator)",
+      email: session?.user?.email || "creator@gmail.com",
       role: role.charAt(0).toUpperCase() + role.slice(1),
-      type: 'creator'
+      type: "creator",
     };
-    
-    if (!selectedParticipants.find(p => p.id === 'current-user')) {
+
+    if (!selectedParticipants.find((p) => p.id === "current-user")) {
       setSelectedParticipants([currentUser, ...selectedParticipants]);
     }
   };
@@ -715,18 +736,18 @@ const CreateMeetingForm = ({ onSubmit }) => {
     const { name, value } = e.target;
     setFormData((prev) => {
       const newFormData = { ...prev, [name]: value };
-      
+
       if (name === "startTime" && value >= prev.endTime) {
-        const startHour = parseInt(value.split(':')[0]);
-        const startMinute = parseInt(value.split(':')[1]);
+        const startHour = parseInt(value.split(":")[0]);
+        const startMinute = parseInt(value.split(":")[1]);
         const endTime = new Date();
         endTime.setHours(startHour, startMinute + 30, 0, 0);
-        
-        const endHour = endTime.getHours().toString().padStart(2, '0');
-        const endMinuteStr = endTime.getMinutes().toString().padStart(2, '0');
+
+        const endHour = endTime.getHours().toString().padStart(2, "0");
+        const endMinuteStr = endTime.getMinutes().toString().padStart(2, "0");
         newFormData.endTime = `${endHour}:${endMinuteStr}`;
       }
-      
+
       return newFormData;
     });
   };
@@ -758,10 +779,10 @@ const CreateMeetingForm = ({ onSubmit }) => {
       const meetingData = {
         title: formData.title,
         date: formData.date,
-        startDateTime: isAllDay 
+        startDateTime: isAllDay
           ? createStartOfDayISO(formData.date)
           : createISODateTime(formData.date, formData.startTime),
-        endDateTime: isAllDay 
+        endDateTime: isAllDay
           ? createEndOfDayISO(formData.date)
           : createISODateTime(formData.date, formData.endTime),
         isAllDay: isAllDay,
@@ -771,7 +792,7 @@ const CreateMeetingForm = ({ onSubmit }) => {
         makeOpenEvent: formData.makeOpenEvent,
         videoCall: formData.videoCall,
         videoCallLink: formData.videoCallLink,
-        participants: selectedParticipants.map(p => p.email), // Save emails instead of names
+        participants: selectedParticipants.map((p) => p.email), // Save emails instead of names
       };
 
       console.log("Meeting data to be sent:", meetingData);
@@ -781,7 +802,7 @@ const CreateMeetingForm = ({ onSubmit }) => {
       if (result.success) {
         alert("Meeting created successfully!");
         console.log("Meeting created:", result.data);
-        
+
         if (onSubmit) {
           onSubmit(result.data);
         }
@@ -820,14 +841,14 @@ const CreateMeetingForm = ({ onSubmit }) => {
 
   const getRoleColor = (role) => {
     switch (role.toLowerCase()) {
-      case 'student':
-        return 'bg-blue-100 text-blue-800';
-      case 'volunteer':
-        return 'bg-green-100 text-green-800';
-      case 'expert':
-        return 'bg-purple-100 text-purple-800';
+      case "student":
+        return "bg-blue-100 text-blue-800";
+      case "volunteer":
+        return "bg-green-100 text-green-800";
+      case "expert":
+        return "bg-purple-100 text-purple-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -836,11 +857,13 @@ const CreateMeetingForm = ({ onSubmit }) => {
       <div className="space-y-6">
         {/* Success/Error Message */}
         {submitMessage && (
-          <div className={`p-4 rounded-md ${
-            submitMessage.includes("Error") 
-              ? "bg-red-50 text-red-700 border border-red-200" 
-              : "bg-green-50 text-green-700 border border-green-200"
-          }`}>
+          <div
+            className={`p-4 rounded-md ${
+              submitMessage.includes("Error")
+                ? "bg-red-50 text-red-700 border border-red-200"
+                : "bg-green-50 text-green-700 border border-green-200"
+            }`}
+          >
             {submitMessage}
           </div>
         )}
@@ -877,7 +900,7 @@ const CreateMeetingForm = ({ onSubmit }) => {
               <span>Add Me</span>
             </button>
           </div>
-          
+
           {/* Selected Participants */}
           {selectedParticipants.length > 0 && (
             <div className="mb-3 flex flex-wrap gap-2">
@@ -887,8 +910,14 @@ const CreateMeetingForm = ({ onSubmit }) => {
                   className="flex items-center space-x-2 bg-white border border-gray-200 rounded-md px-3 py-1"
                 >
                   <User className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm text-gray-700">{participant.name}</span>
-                  <span className={`px-2 py-0.5 text-xs rounded-full ${getRoleColor(participant.role)}`}>
+                  <span className="text-sm text-gray-700">
+                    {participant.name}
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 text-xs rounded-full ${getRoleColor(
+                      participant.role
+                    )}`}
+                  >
                     {participant.role}
                   </span>
                   <button
@@ -926,7 +955,9 @@ const CreateMeetingForm = ({ onSubmit }) => {
             {showParticipantDropdown && (
               <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
                 {loadingUsers ? (
-                  <div className="p-3 text-center text-gray-500">Loading participants...</div>
+                  <div className="p-3 text-center text-gray-500">
+                    Loading participants...
+                  </div>
                 ) : filteredUsers.length > 0 ? (
                   filteredUsers.map((user) => (
                     <div
@@ -937,17 +968,27 @@ const CreateMeetingForm = ({ onSubmit }) => {
                       <div className="flex items-center space-x-3">
                         <User className="h-5 w-5 text-gray-400" />
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                          <div className="text-xs text-gray-500">{user.email}</div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {user.name}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {user.email}
+                          </div>
                         </div>
                       </div>
-                      <span className={`px-2 py-1 text-xs rounded-full ${getRoleColor(user.role)}`}>
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${getRoleColor(
+                          user.role
+                        )}`}
+                      >
                         {user.role}
                       </span>
                     </div>
                   ))
                 ) : (
-                  <div className="p-3 text-center text-gray-500">No participants found</div>
+                  <div className="p-3 text-center text-gray-500">
+                    No participants found
+                  </div>
                 )}
               </div>
             )}
@@ -1010,7 +1051,9 @@ const CreateMeetingForm = ({ onSubmit }) => {
                 onChange={handleTimeChange}
                 disabled={isAllDay || isSubmitting}
                 className={`flex-1 px-3 py-2 bg-white text-gray-800 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  isAllDay || isSubmitting ? "bg-gray-100 cursor-not-allowed" : ""
+                  isAllDay || isSubmitting
+                    ? "bg-gray-100 cursor-not-allowed"
+                    : ""
                 }`}
                 required={!isAllDay}
               >
@@ -1143,7 +1186,8 @@ const CreateMeetingForm = ({ onSubmit }) => {
             className="w-full px-3 bg-white text-gray-800 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
           />
           <p className="text-xs text-gray-500 mt-1">
-            Please provide the meeting link from your video conferencing platform
+            Please provide the meeting link from your video conferencing
+            platform
           </p>
         </div>
 

@@ -36,16 +36,37 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           throw new Error("Invalid Credentials");
         }
 
-        return user;
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        };
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, account }) {
+    async jwt({ token, user,  account }) {
+      if(user){
+        token.id = user.id;
+        token.role = user.role;
+      }
       if (account?.provider === "credentials") {
         token.credentials = true;
       }
       return token;
+    },
+
+    // This callback is called whenever a session is checked.
+    // We pass the role from the JWT to the session object that client-side components access.
+    async session({ session, token }) {
+      // If `token` contains custom properties from the `jwt` callback,
+      // they will be available here.
+      if (token) {
+        session.user.id = token.id; // Ensure user ID is in session
+        session.user.role = token.role; // <-- IMPORTANT: Add role to session
+      }
+      return session;
     },
   },
   jwt: {

@@ -2,8 +2,8 @@
 import { useSession } from 'next-auth/react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import NavBar from '../../components/NavBar';
-import Sidebar from '../../components/Sidebar';
+import Sidebar from '../components/Sidebar';
+import Navbar from '../components/NavBar';
 
 const VALID_ROLES = ['student', 'volunteer', 'expert'];
 
@@ -16,28 +16,22 @@ export default function Layout({ children }) {
   const role = params.role;
 
   
+  useEffect(() => {
+    // Check if URL contains redirected=true
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirected = urlParams.get('redirected');
+    
+    if (redirected === 'true') {
+      // Remove the parameter from URL
+      urlParams.delete('redirected');
+      const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+      window.history.replaceState({}, '', newUrl);
+      
+      // Reload the page
+      window.location.reload();
+    }
+  }, []);
 
-  // useEffect(() => {
-  //   if (status === "loading") return;
-
-  //   // Redirect to login if not authenticated
-  //   if (status === 'unauthenticated') {
-  //     router.push('/login');
-  //     return;
-  //   }
-
-  //   // Check if role is valid
-  //   if (status === 'authenticated' && !VALID_ROLES.includes(role)) {
-  //     router.push(`/${session.user.role}/notifications`);
-  //     return;
-  //   }
-
-  //   // Check if user's role matches the URL role
-  //   if (status === 'authenticated' && session.user.role !== role) {
-  //     router.push(`/${session.user.role}/notifications`);
-  //     return;
-  //   }
-  // }, [session, status, role, router]);
   useEffect(() => {
     console.log('Session status:', status);
     console.log('Session data:', session);
@@ -67,7 +61,7 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
-      <NavBar />
+      <Navbar />
       
       <div className="flex flex-row">
         {/* Sidebar */}

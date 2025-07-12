@@ -1,16 +1,24 @@
+// // src/components/Sidebar.js
 // 'use client'
-// import React, { useState } from 'react';
+// import React, { useEffect, useState } from 'react';
 // import { Bell, Users, User, Calendar, Building, BarChart3 } from 'lucide-react';
 // import CelebrationIcon from '@mui/icons-material/Celebration';
 // import Link from 'next/link';
-// import { usePathname } from 'next/navigation';
+// import { usePathname, useParams, redirect } from 'next/navigation';
+// import { useSession } from 'next-auth/react';
 
 // const Sidebar = () => {
+//   const { data: session} = useSession();
+//   const [isInitialized, setIsInitialized] = useState(false);
 //   const currentPath = usePathname();
-//   console.log((currentPath));
-//   const [activeItem, setActiveItem] = useState(currentPath);
+//   const params = useParams();
+//   const role = params.role;
+  
 
-//   const menuItems = [
+ 
+
+//   // Base menu items - same for all roles
+//   const baseMenuItems = [
 //     {
 //       id: 'notifications',
 //       label: 'Notifications',
@@ -55,25 +63,56 @@
 //     },
 //   ];
 
+//   // Role-specific menu items (you can customize this based on role)
+//   const getRoleSpecificMenuItems = () => {
+//     switch (role) {
+//       case 'student':
+//         // return baseMenuItems.filter(item => 
+//         //   !['organisations', 'schedule'].includes(item.id)
+//         // );
+//         return baseMenuItems;
+//       case 'volunteer':
+//         return baseMenuItems;
+//       case 'expert':
+//         return baseMenuItems;
+//       default:
+//         return baseMenuItems;
+//     }
+//   };
+
+//   const menuItems = getRoleSpecificMenuItems();
+
 //   // Function to check if a menu item should be active
 //   const isActiveItem = (itemPath) => {
-//       return currentPath.startsWith(itemPath) || currentPath === itemPath;
+//     // Create the full role-based path
+//     const fullPath = `/${role}${itemPath}`;
+//     return currentPath === fullPath;
 //   };
+
+//   // Function to get the full href for a menu item
+//   const getMenuItemHref = (itemPath) => {
+//     return `/${role}${itemPath}`;
+//   };
+
+//   if (!role || !session) {
+//     return null;
+//   }
 
 //   return (
 //     <div className="w-64 min-h-screen bg-white border-r border-gray-200 flex flex-col">
+
 //       {/* Menu Items */}
 //       <nav className="flex-1 px-4 py-6">
 //         <ul className="space-y-2">
 //           {menuItems.map((item) => {
 //             const IconComponent = item.icon;
 //             const isActive = isActiveItem(item.path);
+//             const href = getMenuItemHref(item.path);
             
 //             return (
 //               <li key={item.id}>
 //                 <Link
-//                   href={item.path}
-//                   onClick={() => setActiveItem(item.path)}
+//                   href={href}
 //                   className={`w-full flex items-center px-3 py-3 text-left rounded-lg transition-colors ${
 //                     isActive
 //                       ? 'bg-gray-200 text-gray-700 border-l-4 border-gray-500'
@@ -92,6 +131,19 @@
 //           })}
 //         </ul>
 //       </nav>
+
+//       {/* User info at bottom */}
+//       <div className="px-4 py-4 border-t border-gray-200">
+//         <div className="text-xs text-gray-500">
+//           Signed in as
+//         </div>
+//         <div className="text-sm font-medium text-gray-700 truncate">
+//           {session.user.name}
+//         </div>
+//         <div className="text-xs text-gray-500">
+//           {session.user.email}
+//         </div>
+//       </div>
 //     </div>
 //   );
 // };
@@ -163,21 +215,22 @@ const Sidebar = () => {
     },
   ];
 
-  // Role-specific menu items (you can customize this based on role)
+  // Role-specific menu items with visibility restrictions
   const getRoleSpecificMenuItems = () => {
-    switch (role) {
-      case 'student':
-        // return baseMenuItems.filter(item => 
-        //   !['organisations', 'schedule'].includes(item.id)
-        // );
-        return baseMenuItems;
-      case 'volunteer':
-        return baseMenuItems;
-      case 'expert':
-        return baseMenuItems;
-      default:
-        return baseMenuItems;
+    const restrictedRoles = ['volunteer', 'expert'];
+    const hiddenPanels = ['organisations', 'progress'];
+    
+    if(role === "student"){
+      return baseMenuItems.filter(item => !["members", "organisations", "progress"].includes(item.id));
     }
+
+    // If current role is in restricted roles, filter out hidden panels
+    if (restrictedRoles.includes(role)) {
+      return baseMenuItems.filter(item => !hiddenPanels.includes(item.id));
+    }
+    
+    // Admin role sees all panels
+    return baseMenuItems;
   };
 
   const menuItems = getRoleSpecificMenuItems();

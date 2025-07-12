@@ -1,5 +1,6 @@
+// src/app/api/students/[id]/route.js
 import { NextResponse } from 'next/server';
-import {prisma} from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 
 // GET single student
 export async function GET(request, { params }) {
@@ -9,6 +10,19 @@ export async function GET(request, { params }) {
     const student = await prisma.student.findUnique({
       where: { id },
       include: {
+        user: { // Include the associated User data
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            age: true,
+            role: true,
+            image: true,
+            companyName: true,
+            phoneNumber: true,
+            country: true,
+          }
+        },
         volunteerAssigned: true,
         programmeEnrolled: {
           include: { group: true }
@@ -37,14 +51,18 @@ export async function GET(request, { params }) {
   }
 }
 
-// PUT - Update student
+// PUT - Update student profile and potentially linked user data
 export async function PUT(request, { params }) {
   try {
     const { id } = params;
     const body = await request.json();
 
+    console.log('PUT /api/students/[id] - ID:', id);
+    console.log('PUT /api/students/[id] - Body:', body);
+
     const existingStudent = await prisma.student.findUnique({
-      where: { id }
+      where: { id },
+      include: { user: true }
     });
 
     if (!existingStudent) {
@@ -54,15 +72,15 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // Check if email is being changed and if it already exists
-    if (body.email && body.email !== existingStudent.email) {
-      const emailExists = await prisma.student.findUnique({
+    // If email is being changed, update it in the User model as well
+    if (body.email && body.email !== existingStudent.user.email) {
+      const emailExistsInUser = await prisma.user.findUnique({
         where: { email: body.email }
       });
-      
-      if (emailExists) {
+
+      if (emailExistsInUser && emailExistsInUser.id !== existingStudent.userId) {
         return NextResponse.json(
-          { success: false, error: 'Email already exists' },
+          { success: false, error: 'Email already exists for another user' },
           { status: 400 }
         );
       }
@@ -71,17 +89,72 @@ export async function PUT(request, { params }) {
     const updatedStudent = await prisma.$transaction(async (tx) => {
       // Handle programme change
       const oldProgrammeId = existingStudent.programmeEnrolledId;
-      const newProgrammeId = body.programmeEnrolledId;
+      const newProgrammeId = body.programmeEnrolledId || null;
 
+      // First, update the User record if necessary
+      const userUpdateData = {};
+      if (body.name && body.name !== existingStudent.user.name) {
+        userUpdateData.name = body.name;
+      }
+      if (body.age !== undefined && parseInt(body.age) !== existingStudent.user.age) {
+        userUpdateData.age = body.age ? parseInt(body.age) : null;
+      }
+      if (body.email && body.email !== existingStudent.user.email) {
+        userUpdateData.email = body.email;
+      }
+
+      // Update user if there are changes
+      if (Object.keys(userUpdateData).length > 0) {
+        await tx.user.update({
+          where: { id: existingStudent.userId },
+          data: userUpdateData
+        });
+      }
+
+      // Prepare student update data
+      const studentUpdateData = {
+        name: body.name || existingStudent.name,
+        age: body.age ? parseInt(body.age) : existingStudent.age,
+        email: body.email || existingStudent.email,
+        skills: body.skills || existingStudent.skills,
+        areaOfInterest: body.areaOfInterest || existingStudent.areaOfInterest,
+        readingCapacity: body.readingCapacity || existingStudent.readingCapacity,
+        preferredLanguages: body.preferredLanguages || existingStudent.preferredLanguages,
+        fineMotorDevelopment: body.fineMotorDevelopment || existingStudent.fineMotorDevelopment,
+        interactionCapacity: body.interactionCapacity || existingStudent.interactionCapacity,
+        onlineClassExperience: body.onlineClassExperience || existingStudent.onlineClassExperience,
+        attentionSpan: body.attentionSpan || existingStudent.attentionSpan,
+        triggeringFactors: body.triggeringFactors || existingStudent.triggeringFactors,
+        happyMoments: body.happyMoments || existingStudent.happyMoments,
+        disability: body.disability || existingStudent.disability,
+        // Handle foreign key relationships
+        volunteerAssignedId: body.volunteerAssignedId || null,
+        programmeEnrolledId: body.programmeEnrolledId || null,
+        organisationId: body.organisationId || null,
+      };
+
+      // Update the student record
       const student = await tx.student.update({
         where: { id },
-        data: {
-          ...body,
-          age: body.age ? parseInt(body.age) : undefined
-        },
+        data: studentUpdateData,
         include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              age: true,
+              role: true,
+              image: true,
+              companyName: true,
+              phoneNumber: true,
+              country: true,
+            }
+          },
           volunteerAssigned: true,
-          programmeEnrolled: true,
+          programmeEnrolled: {
+            include: { group: true }
+          },
           organisation: true
         }
       });
@@ -114,7 +187,7 @@ export async function PUT(request, { params }) {
   } catch (error) {
     console.error('Error updating student:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to update student' },
+      { success: false, error: 'Failed to update student', details: error.message },
       { status: 500 }
     );
   }

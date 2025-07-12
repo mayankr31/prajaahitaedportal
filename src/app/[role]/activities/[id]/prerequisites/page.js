@@ -73,7 +73,6 @@
 
 // export default Prerequisites;
 
-
 // src\app\[role]\activities\[id]\prerequisites\page.js
 "use client";
 import React, { useState, useEffect } from "react";
@@ -86,7 +85,7 @@ import {
   DialogActions,
   Button,
   Alert,
-  CircularProgress
+  CircularProgress,
 } from "@mui/material";
 import ImageUpload from "@/app/components/ImageUpload";
 import { prerequisiteAPI } from "@/lib/api";
@@ -116,15 +115,15 @@ const Prerequisites = () => {
       setLoading(true);
       setError(null);
       const response = await prerequisiteAPI.getAll(activityId);
-      
+
       if (response.success) {
         setPrerequisites(response.data);
       } else {
-        setError(response.error || 'Failed to fetch prerequisites');
+        setError(response.error || "Failed to fetch prerequisites");
       }
     } catch (err) {
-      console.error('Error fetching prerequisites:', err);
-      setError('Failed to load prerequisites');
+      console.error("Error fetching prerequisites:", err);
+      setError("Failed to load prerequisites");
     } finally {
       setLoading(false);
     }
@@ -148,7 +147,7 @@ const Prerequisites = () => {
 
       const prerequisiteData = {
         imageUrl: imagePath,
-        activityId: activityId
+        activityId: activityId,
       };
 
       const response = await prerequisiteAPI.create(prerequisiteData);
@@ -156,18 +155,18 @@ const Prerequisites = () => {
       if (response.success) {
         // Refresh the prerequisites list
         await fetchPrerequisites();
-        
+
         // Close dialog
         handleDialogClose();
-        
+
         // Optional: Show success message
-        console.log('Prerequisite added successfully');
+        console.log("Prerequisite added successfully");
       } else {
-        setUploadError(response.error || 'Failed to create prerequisite');
+        setUploadError(response.error || "Failed to create prerequisite");
       }
     } catch (err) {
-      console.error('Error creating prerequisite:', err);
-      setUploadError('Failed to create prerequisite');
+      console.error("Error creating prerequisite:", err);
+      setUploadError("Failed to create prerequisite");
     } finally {
       setUploading(false);
     }
@@ -194,13 +193,15 @@ const Prerequisites = () => {
           <ChevronRight className="text-gray-800" size={20} />
           <h1 className="font-bold text-gray-800">Pre- Requisites Available</h1>
         </div>
-        <button
-          onClick={handleAddPrerequisite}
-          className="flex items-center text-sm space-x-2 bg-[#2F699A] text-white px-4 py-2 rounded-lg hover:bg-[#25547b] transition-colors"
-        >
-          <Plus size={18} />
-          <span>Add Prerequisite</span>
-        </button>
+        {(role === "volunteer" || role === "expert" || role === "admin") && (
+          <button
+            onClick={handleAddPrerequisite}
+            className="flex items-center text-sm space-x-2 bg-[#2F699A] text-white px-4 py-2 rounded-lg hover:bg-[#25547b] transition-colors"
+          >
+            <Plus size={18} />
+            <span>Add Prerequisite</span>
+          </button>
+        )}
       </div>
 
       {/* Error Message */}
@@ -231,7 +232,9 @@ const Prerequisites = () => {
       {prerequisites.length === 0 && !loading && (
         <div className="text-center py-12">
           <p className="text-gray-500 text-lg">No prerequisites available</p>
-          <p className="text-gray-400 text-sm mt-2">Click "Add Prerequisite" to get started</p>
+          <p className="text-gray-400 text-sm mt-2">
+            Click "Add Prerequisite" to get started
+          </p>
         </div>
       )}
 
@@ -255,7 +258,7 @@ const Prerequisites = () => {
               showFileName={true}
               resetTrigger={resetTrigger}
             />
-            
+
             {uploadError && (
               <Alert severity="error" sx={{ mt: 2 }}>
                 {uploadError}
@@ -264,21 +267,18 @@ const Prerequisites = () => {
           </div>
         </DialogContent>
         <DialogActions>
-          <Button 
-            onClick={handleDialogClose} 
-            disabled={uploading}
-          >
+          <Button onClick={handleDialogClose} disabled={uploading}>
             Cancel
           </Button>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             disabled={uploading}
             onClick={() => {
               // The upload happens automatically when file is selected
               // This button is just for UX, the actual upload is handled by ImageUpload component
             }}
           >
-            {uploading ? 'Adding...' : 'Add Prerequisite'}
+            {uploading ? "Adding..." : "Add Prerequisite"}
           </Button>
         </DialogActions>
       </Dialog>

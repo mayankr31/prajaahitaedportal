@@ -1,10 +1,8 @@
 // src/app/[role]/notifications/page.js
-'use client';
+// 'use client';
 import { auth } from '@/auth';
 import { Ellipsis } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
-export default  function  Notifications()  {
+export default async function  Notifications()  {
   const yesterdayMeetings = [
     {
       id: 1,
@@ -73,18 +71,8 @@ export default  function  Notifications()  {
   // useEffect(() => {
   //   window.location.reload();
   // }, [])
-  // const session = await auth();
-  // console.log("Session:", session);
-
-  const router = useRouter();
-  const hasRefreshed = useRef(false);
-
-  // useEffect(() => {
-  //   if (!hasRefreshed.current) {
-  //     hasRefreshed.current = true;
-  //     window.location.reload();
-  //   }
-  // }, []);
+  const session = await auth();
+  console.log("Session:", session);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">

@@ -3,7 +3,8 @@
 
 // import React, { useState, useEffect } from "react";
 // import { Plus, ChevronRight } from "lucide-react";
-// import { useParams } from "next/navigation";
+// import { useParams, useRouter } from "next/navigation";
+// import Link from "next/link";
 // import {
 //   Dialog,
 //   DialogTitle,
@@ -15,17 +16,19 @@
 //   Box,
 //   CircularProgress,
 //   Alert,
-//   IconButton
+//   IconButton,
 // } from "@mui/material";
 // import Grid from "@mui/material/Grid";
-// import CloseIcon from '@mui/icons-material/Close';
+// import CloseIcon from "@mui/icons-material/Close";
 // import { programmeAPI } from "@/lib/api";
 // import ImageUpload from "@/app/components/ImageUpload"; // Adjust path as needed
 
 // const Programmes = () => {
 //   const params = useParams();
+//   const router = useRouter();
+//   const role = params.role; // Get role from URL params
 //   const groupId = params.id; // Get group ID from URL params
-  
+
 //   const [open, setOpen] = useState(false);
 //   const [loading, setLoading] = useState(false);
 //   const [error, setError] = useState("");
@@ -37,7 +40,7 @@
 //     students: "",
 //     volunteers: "",
 //     specialEducators: "",
-//     imageUrl: ""
+//     imageUrl: "",
 //   });
 
 //   // Static data as fallback (you can remove this once API is working)
@@ -50,7 +53,7 @@
 //       volunteers: 50,
 //       specialEducators: 20,
 //       image: "/api/placeholder/300/200",
-//       color: "bg-blue-100"
+//       color: "bg-blue-100",
 //     },
 //     {
 //       id: 2,
@@ -60,7 +63,7 @@
 //       volunteers: 50,
 //       specialEducators: 20,
 //       image: "/api/placeholder/300/200",
-//       color: "bg-green-100"
+//       color: "bg-green-100",
 //     },
 //     {
 //       id: 3,
@@ -70,7 +73,7 @@
 //       volunteers: 50,
 //       specialEducators: 20,
 //       image: "/api/placeholder/300/200",
-//       color: "bg-purple-100"
+//       color: "bg-purple-100",
 //     },
 //     {
 //       id: 4,
@@ -80,7 +83,7 @@
 //       volunteers: 50,
 //       specialEducators: 20,
 //       image: "/api/placeholder/300/200",
-//       color: "bg-orange-100"
+//       color: "bg-orange-100",
 //     },
 //     {
 //       id: 5,
@@ -90,7 +93,7 @@
 //       volunteers: 50,
 //       specialEducators: 20,
 //       image: "/api/placeholder/300/200",
-//       color: "bg-teal-100"
+//       color: "bg-teal-100",
 //     },
 //     {
 //       id: 6,
@@ -100,8 +103,8 @@
 //       volunteers: 50,
 //       specialEducators: 20,
 //       image: "/api/placeholder/300/200",
-//       color: "bg-pink-100"
-//     }
+//       color: "bg-pink-100",
+//     },
 //   ];
 
 //   // Load programmes on component mount
@@ -141,7 +144,7 @@
 //       students: "",
 //       volunteers: "",
 //       specialEducators: "",
-//       imageUrl: ""
+//       imageUrl: "",
 //     });
 //     setError("");
 //     setSuccess("");
@@ -151,9 +154,9 @@
 
 //   const handleInputChange = (e) => {
 //     const { name, value } = e.target;
-//     setFormData(prev => ({
+//     setFormData((prev) => ({
 //       ...prev,
-//       [name]: value
+//       [name]: value,
 //     }));
 //   };
 
@@ -164,9 +167,9 @@
 
 //   const handleImageUploadComplete = (imagePath, file) => {
 //     console.log("Image uploaded successfully:", imagePath);
-//     setFormData(prev => ({
+//     setFormData((prev) => ({
 //       ...prev,
-//       imageUrl: imagePath
+//       imageUrl: imagePath,
 //     }));
 //   };
 
@@ -195,7 +198,7 @@
 
 //   const handleSubmit = async (e) => {
 //     e.preventDefault();
-    
+
 //     if (!validateForm()) {
 //       return;
 //     }
@@ -210,7 +213,7 @@
 //         students: parseInt(formData.students) || 0,
 //         volunteers: parseInt(formData.volunteers) || 0,
 //         specialEducators: parseInt(formData.specialEducators) || 0,
-//         imageUrl: formData.imageUrl.trim() || null
+//         imageUrl: formData.imageUrl.trim() || null,
 //       };
 
 //       const result = await programmeAPI.create(submitData);
@@ -233,40 +236,60 @@
 //     }
 //   };
 
-//   const displayProgrammes = programmes.length > 0 ? programmes : staticProgrammesData;
+//   // Handle programme click - can be used to navigate to programme details
+//   const handleProgrammeClick = (programmeId) => {
+//     // Fixed: Include role in the route
+//     router.push(`/${role}/groups/${groupId}/programmes/${programmeId}`);
+//   };
+
+//   const displayProgrammes =
+//     programmes.length > 0 ? programmes : staticProgrammesData;
 
 //   return (
 //     <div className="p-8 bg-gray-50 min-h-screen">
-//       {/* Header */}
+//       {/* Header with Breadcrumb */}
 //       <div className="flex items-center justify-between mb-8">
 //         <div className="flex items-center space-x-2">
-//           <h1 className="font-bold text-gray-800">Groups</h1>
+//           <Link
+//             href={`/${role}/groups`}
+//             className="font-bold text-gray-800 hover:text-blue-600 transition-colors"
+//           >
+//             Groups
+//           </Link>
 //           <ChevronRight className="text-gray-800" size={20} />
 //           <h1 className="font-bold text-gray-800">All Programmes</h1>
 //         </div>
-//         <button 
-//           onClick={handleOpen}
-//           className="flex items-center text-sm space-x-2 bg-[#2F699A] text-white px-4 py-2 rounded-lg hover:bg-[#25547b] transition-colors"
-//         >
-//           <Plus size={18} />
-//           <span>Add Programmes</span>
-//         </button>
+//         {(role === "volunteer" || role === "expert" || role === "admin") && (
+//           <button
+//             onClick={handleOpen}
+//             className="flex items-center text-sm space-x-2 bg-[#2F699A] text-white px-4 py-2 rounded-lg hover:bg-[#25547b] transition-colors"
+//           >
+//             <Plus size={18} />
+//             <span>Add Programmes</span>
+//           </button>
+//         )}
 //       </div>
 
 //       {/* Loading State */}
 //       {loadingProgrammes ? (
 //         <div className="flex justify-center items-center h-64">
-//           <CircularProgress size={40} sx={{ color: '#2F699A' }} />
+//           <CircularProgress size={40} sx={{ color: "#2F699A" }} />
 //         </div>
 //       ) : (
 //         /* Programmes Grid - 3 cards per row */
 //         <div className="grid grid-cols-3 gap-8">
 //           {displayProgrammes.map((programme) => {
-//             const totalMembers = programme.totalMembers || 
-//               (programme.students + programme.volunteers + programme.specialEducators);
-            
+//             const totalMembers =
+//               programme.totalMembers ||
+//               programme.students +
+//                 programme.volunteers +
+//                 programme.specialEducators;
+
 //             return (
-//               <div key={programme.id} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+//               <div
+//                 key={programme.id}
+//                 className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden"
+//               >
 //                 {/* Programme Content */}
 //                 <div className="px-6 py-10">
 //                   {/* Image and Info Side by Side */}
@@ -274,12 +297,16 @@
 //                     {/* Programme Image in Circle */}
 //                     <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
 //                       <img
-//                         src={programme.image || programme.imageUrl || "/api/placeholder/300/200"}
+//                         src={
+//                           programme.image ||
+//                           programme.imageUrl ||
+//                           "/api/placeholder/300/200"
+//                         }
 //                         alt={programme.name || "Programme"}
 //                         className="w-12 h-12 object-cover rounded-full"
 //                       />
 //                     </div>
-                    
+
 //                     {/* Programme Info */}
 //                     <div className="flex-1">
 //                       <div className="mb-3">
@@ -287,17 +314,22 @@
 //                           Total Members : {totalMembers}
 //                         </h3>
 //                       </div>
-                      
+
 //                       <div className="space-y-1 text-xs text-gray-600">
 //                         <div>Students : {programme.students}</div>
 //                         <div>Volunteers : {programme.volunteers}</div>
-//                         <div>Special Educators : {programme.specialEducators}</div>
+//                         <div>
+//                           Special Educators : {programme.specialEducators}
+//                         </div>
 //                       </div>
 //                     </div>
 //                   </div>
-                  
+
 //                   {/* See Details Button */}
-//                   <button className="w-full bg-[#2F699A] text-sm text-white py-3 rounded-lg hover:bg-[#25547b] transition-colors font-medium">
+//                   <button
+//                     onClick={() => handleProgrammeClick(programme.id)}
+//                     className="w-full bg-[#2F699A] text-sm text-white py-3 rounded-lg hover:bg-[#25547b] transition-colors font-medium"
+//                   >
 //                     See Details
 //                   </button>
 //                 </div>
@@ -308,25 +340,39 @@
 //       )}
 
 //       {/* Add Programme Dialog */}
-//       <Dialog 
-//         open={open} 
+//       <Dialog
+//         open={open}
 //         onClose={handleClose}
 //         maxWidth="sm"
 //         fullWidth
 //         PaperProps={{
 //           sx: {
 //             borderRadius: 3,
-//             minHeight: '500px'
-//           }
+//             minHeight: "500px",
+//           },
 //         }}
 //       >
 //         <DialogTitle sx={{ m: 0, p: 2, pb: 1 }}>
-//           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+//           <Box
+//             sx={{
+//               display: "flex",
+//               alignItems: "center",
+//               justifyContent: "space-between",
+//             }}
+//           >
 //             <Box>
-//               <Typography variant="h6" component="div" sx={{ fontWeight: 600, color: '#2F699A' }}>
+//               <Typography
+//                 variant="h6"
+//                 component="div"
+//                 sx={{ fontWeight: 600, color: "#2F699A" }}
+//               >
 //                 Add New Programme
 //               </Typography>
-//               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+//               <Typography
+//                 variant="body2"
+//                 color="text.secondary"
+//                 sx={{ mt: 0.5 }}
+//               >
 //                 Fill in the details to create a new programme for this group
 //               </Typography>
 //             </Box>
@@ -349,7 +395,7 @@
 //                 {error}
 //               </Alert>
 //             )}
-            
+
 //             {success && (
 //               <Alert severity="success" sx={{ mb: 3 }}>
 //                 {success}
@@ -370,18 +416,18 @@
 //                   size="medium"
 //                   helperText="Enter the number of students"
 //                   sx={{
-//                     '& .MuiOutlinedInput-root': {
-//                       '&.Mui-focused fieldset': {
-//                         borderColor: '#2F699A',
+//                     "& .MuiOutlinedInput-root": {
+//                       "&.Mui-focused fieldset": {
+//                         borderColor: "#2F699A",
 //                       },
 //                     },
-//                     '& .MuiInputLabel-root.Mui-focused': {
-//                       color: '#2F699A',
+//                     "& .MuiInputLabel-root.Mui-focused": {
+//                       color: "#2F699A",
 //                     },
 //                   }}
 //                 />
 //               </Grid>
-              
+
 //               <Grid size={{ xs: 12, sm: 6 }}>
 //                 <TextField
 //                   name="volunteers"
@@ -395,18 +441,18 @@
 //                   size="medium"
 //                   helperText="Enter the number of volunteers"
 //                   sx={{
-//                     '& .MuiOutlinedInput-root': {
-//                       '&.Mui-focused fieldset': {
-//                         borderColor: '#2F699A',
+//                     "& .MuiOutlinedInput-root": {
+//                       "&.Mui-focused fieldset": {
+//                         borderColor: "#2F699A",
 //                       },
 //                     },
-//                     '& .MuiInputLabel-root.Mui-focused': {
-//                       color: '#2F699A',
+//                     "& .MuiInputLabel-root.Mui-focused": {
+//                       color: "#2F699A",
 //                     },
 //                   }}
 //                 />
 //               </Grid>
-              
+
 //               <Grid size={12}>
 //                 <TextField
 //                   name="specialEducators"
@@ -420,22 +466,26 @@
 //                   size="medium"
 //                   helperText="Enter the number of special educators"
 //                   sx={{
-//                     '& .MuiOutlinedInput-root': {
-//                       '&.Mui-focused fieldset': {
-//                         borderColor: '#2F699A',
+//                     "& .MuiOutlinedInput-root": {
+//                       "&.Mui-focused fieldset": {
+//                         borderColor: "#2F699A",
 //                       },
 //                     },
-//                     '& .MuiInputLabel-root.Mui-focused': {
-//                       color: '#2F699A',
+//                     "& .MuiInputLabel-root.Mui-focused": {
+//                       color: "#2F699A",
 //                     },
 //                   }}
 //                 />
 //               </Grid>
-              
+
 //               {/* Replace Image URL field with ImageUpload component */}
 //               <Grid size={12}>
 //                 <Box>
-//                   <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
+//                   <Typography
+//                     variant="body2"
+//                     color="text.secondary"
+//                     sx={{ mb: 1, fontWeight: 500 }}
+//                   >
 //                     Programme Image (Optional)
 //                   </Typography>
 //                   <ImageUpload
@@ -455,45 +505,45 @@
 //           </DialogContent>
 
 //           <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
-//             <Button 
-//               onClick={handleClose} 
+//             <Button
+//               onClick={handleClose}
 //               disabled={loading}
-//               sx={{ 
-//                 color: 'text.secondary',
-//                 textTransform: 'none',
+//               sx={{
+//                 color: "text.secondary",
+//                 textTransform: "none",
 //                 fontWeight: 500,
-//                 '&:hover': {
-//                   backgroundColor: 'rgba(0, 0, 0, 0.04)'
-//                 }
+//                 "&:hover": {
+//                   backgroundColor: "rgba(0, 0, 0, 0.04)",
+//                 },
 //               }}
 //             >
 //               Cancel
 //             </Button>
-//             <Button 
+//             <Button
 //               type="submit"
 //               variant="contained"
 //               disabled={loading}
-//               sx={{ 
-//                 backgroundColor: '#2F699A',
-//                 textTransform: 'none',
+//               sx={{
+//                 backgroundColor: "#2F699A",
+//                 textTransform: "none",
 //                 fontWeight: 600,
 //                 px: 3,
-//                 '&:hover': {
-//                   backgroundColor: '#25547b'
+//                 "&:hover": {
+//                   backgroundColor: "#25547b",
 //                 },
-//                 '&:disabled': {
-//                   backgroundColor: 'rgba(47, 105, 154, 0.6)'
+//                 "&:disabled": {
+//                   backgroundColor: "rgba(47, 105, 154, 0.6)",
 //                 },
-//                 minWidth: '120px'
+//                 minWidth: "120px",
 //               }}
 //             >
 //               {loading ? (
-//                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+//                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
 //                   <CircularProgress size={16} color="inherit" />
 //                   Creating...
 //                 </Box>
 //               ) : (
-//                 'Create Programme'
+//                 "Create Programme"
 //               )}
 //             </Button>
 //           </DialogActions>
@@ -523,10 +573,10 @@ import {
   Box,
   CircularProgress,
   Alert,
-  IconButton
+  IconButton,
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
-import CloseIcon from '@mui/icons-material/Close';
+import CloseIcon from "@mui/icons-material/Close";
 import { programmeAPI } from "@/lib/api";
 import ImageUpload from "@/app/components/ImageUpload"; // Adjust path as needed
 
@@ -535,7 +585,7 @@ const Programmes = () => {
   const router = useRouter();
   const role = params.role; // Get role from URL params
   const groupId = params.id; // Get group ID from URL params
-  
+
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -544,10 +594,11 @@ const Programmes = () => {
   const [loadingProgrammes, setLoadingProgrammes] = useState(true);
   const [resetImageUpload, setResetImageUpload] = useState(null);
   const [formData, setFormData] = useState({
+    name: "",
     students: "",
     volunteers: "",
     specialEducators: "",
-    imageUrl: ""
+    imageUrl: "",
   });
 
   // Static data as fallback (you can remove this once API is working)
@@ -560,7 +611,7 @@ const Programmes = () => {
       volunteers: 50,
       specialEducators: 20,
       image: "/api/placeholder/300/200",
-      color: "bg-blue-100"
+      color: "bg-blue-100",
     },
     {
       id: 2,
@@ -570,7 +621,7 @@ const Programmes = () => {
       volunteers: 50,
       specialEducators: 20,
       image: "/api/placeholder/300/200",
-      color: "bg-green-100"
+      color: "bg-green-100",
     },
     {
       id: 3,
@@ -580,7 +631,7 @@ const Programmes = () => {
       volunteers: 50,
       specialEducators: 20,
       image: "/api/placeholder/300/200",
-      color: "bg-purple-100"
+      color: "bg-purple-100",
     },
     {
       id: 4,
@@ -590,7 +641,7 @@ const Programmes = () => {
       volunteers: 50,
       specialEducators: 20,
       image: "/api/placeholder/300/200",
-      color: "bg-orange-100"
+      color: "bg-orange-100",
     },
     {
       id: 5,
@@ -600,7 +651,7 @@ const Programmes = () => {
       volunteers: 50,
       specialEducators: 20,
       image: "/api/placeholder/300/200",
-      color: "bg-teal-100"
+      color: "bg-teal-100",
     },
     {
       id: 6,
@@ -610,8 +661,8 @@ const Programmes = () => {
       volunteers: 50,
       specialEducators: 20,
       image: "/api/placeholder/300/200",
-      color: "bg-pink-100"
-    }
+      color: "bg-pink-100",
+    },
   ];
 
   // Load programmes on component mount
@@ -648,10 +699,11 @@ const Programmes = () => {
   const handleClose = () => {
     setOpen(false);
     setFormData({
+      name: "",
       students: "",
       volunteers: "",
       specialEducators: "",
-      imageUrl: ""
+      imageUrl: "",
     });
     setError("");
     setSuccess("");
@@ -661,9 +713,9 @@ const Programmes = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -674,9 +726,9 @@ const Programmes = () => {
 
   const handleImageUploadComplete = (imagePath, file) => {
     console.log("Image uploaded successfully:", imagePath);
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      imageUrl: imagePath
+      imageUrl: imagePath,
     }));
   };
 
@@ -686,6 +738,18 @@ const Programmes = () => {
   };
 
   const validateForm = () => {
+    // Check if name is provided
+    if (!formData.name.trim()) {
+      setError("Programme name is required");
+      return false;
+    }
+
+    // Check if name is at least 3 characters long
+    if (formData.name.trim().length < 3) {
+      setError("Programme name must be at least 3 characters long");
+      return false;
+    }
+
     const students = parseInt(formData.students) || 0;
     const volunteers = parseInt(formData.volunteers) || 0;
     const specialEducators = parseInt(formData.specialEducators) || 0;
@@ -705,7 +769,7 @@ const Programmes = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -716,11 +780,12 @@ const Programmes = () => {
 
     try {
       const submitData = {
+        name: formData.name.trim(),
         groupId,
         students: parseInt(formData.students) || 0,
         volunteers: parseInt(formData.volunteers) || 0,
         specialEducators: parseInt(formData.specialEducators) || 0,
-        imageUrl: formData.imageUrl.trim() || null
+        imageUrl: formData.imageUrl.trim() || null,
       };
 
       const result = await programmeAPI.create(submitData);
@@ -749,14 +814,15 @@ const Programmes = () => {
     router.push(`/${role}/groups/${groupId}/programmes/${programmeId}`);
   };
 
-  const displayProgrammes = programmes.length > 0 ? programmes : staticProgrammesData;
+  const displayProgrammes =
+    programmes.length > 0 ? programmes : staticProgrammesData;
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
       {/* Header with Breadcrumb */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center space-x-2">
-          <Link 
+          <Link
             href={`/${role}/groups`}
             className="font-bold text-gray-800 hover:text-blue-600 transition-colors"
           >
@@ -765,42 +831,61 @@ const Programmes = () => {
           <ChevronRight className="text-gray-800" size={20} />
           <h1 className="font-bold text-gray-800">All Programmes</h1>
         </div>
-        <button 
-          onClick={handleOpen}
-          className="flex items-center text-sm space-x-2 bg-[#2F699A] text-white px-4 py-2 rounded-lg hover:bg-[#25547b] transition-colors"
-        >
-          <Plus size={18} />
-          <span>Add Programmes</span>
-        </button>
+        {(role === "volunteer" || role === "expert" || role === "admin") && (
+          <button
+            onClick={handleOpen}
+            className="flex items-center text-sm space-x-2 bg-[#2F699A] text-white px-4 py-2 rounded-lg hover:bg-[#25547b] transition-colors"
+          >
+            <Plus size={18} />
+            <span>Add Programmes</span>
+          </button>
+        )}
       </div>
 
       {/* Loading State */}
       {loadingProgrammes ? (
         <div className="flex justify-center items-center h-64">
-          <CircularProgress size={40} sx={{ color: '#2F699A' }} />
+          <CircularProgress size={40} sx={{ color: "#2F699A" }} />
         </div>
       ) : (
         /* Programmes Grid - 3 cards per row */
         <div className="grid grid-cols-3 gap-8">
           {displayProgrammes.map((programme) => {
-            const totalMembers = programme.totalMembers || 
-              (programme.students + programme.volunteers + programme.specialEducators);
-            
+            const totalMembers =
+              programme.totalMembers ||
+              programme.students +
+                programme.volunteers +
+                programme.specialEducators;
+
             return (
-              <div key={programme.id} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+              <div
+                key={programme.id}
+                className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden"
+              >
                 {/* Programme Content */}
                 <div className="px-6 py-10">
+                  {/* Programme Name */}
+                  <div className="text-center mb-6">
+                    <h2 className="font-bold text-lg text-gray-800 mb-2">
+                      {programme.name}
+                    </h2>
+                  </div>
+
                   {/* Image and Info Side by Side */}
                   <div className="flex items-center justify-center space-x-4 mb-6">
                     {/* Programme Image in Circle */}
                     <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
                       <img
-                        src={programme.image || programme.imageUrl || "/api/placeholder/300/200"}
+                        src={
+                          programme.image ||
+                          programme.imageUrl ||
+                          "/api/placeholder/300/200"
+                        }
                         alt={programme.name || "Programme"}
                         className="w-12 h-12 object-cover rounded-full"
                       />
                     </div>
-                    
+
                     {/* Programme Info */}
                     <div className="flex-1">
                       <div className="mb-3">
@@ -808,17 +893,19 @@ const Programmes = () => {
                           Total Members : {totalMembers}
                         </h3>
                       </div>
-                      
+
                       <div className="space-y-1 text-xs text-gray-600">
                         <div>Students : {programme.students}</div>
                         <div>Volunteers : {programme.volunteers}</div>
-                        <div>Special Educators : {programme.specialEducators}</div>
+                        <div>
+                          Special Educators : {programme.specialEducators}
+                        </div>
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* See Details Button */}
-                  <button 
+                  <button
                     onClick={() => handleProgrammeClick(programme.id)}
                     className="w-full bg-[#2F699A] text-sm text-white py-3 rounded-lg hover:bg-[#25547b] transition-colors font-medium"
                   >
@@ -832,25 +919,39 @@ const Programmes = () => {
       )}
 
       {/* Add Programme Dialog */}
-      <Dialog 
-        open={open} 
+      <Dialog
+        open={open}
         onClose={handleClose}
         maxWidth="sm"
         fullWidth
         PaperProps={{
           sx: {
             borderRadius: 3,
-            minHeight: '500px'
-          }
+            minHeight: "500px",
+          },
         }}
       >
         <DialogTitle sx={{ m: 0, p: 2, pb: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
             <Box>
-              <Typography variant="h6" component="div" sx={{ fontWeight: 600, color: '#2F699A' }}>
+              <Typography
+                variant="h6"
+                component="div"
+                sx={{ fontWeight: 600, color: "#2F699A" }}
+              >
                 Add New Programme
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 0.5 }}
+              >
                 Fill in the details to create a new programme for this group
               </Typography>
             </Box>
@@ -873,7 +974,7 @@ const Programmes = () => {
                 {error}
               </Alert>
             )}
-            
+
             {success && (
               <Alert severity="success" sx={{ mb: 3 }}>
                 {success}
@@ -881,6 +982,31 @@ const Programmes = () => {
             )}
 
             <Grid container spacing={3}>
+              {/* Programme Name Field */}
+              <Grid size={12}>
+                <TextField
+                  name="name"
+                  label="Programme Name"
+                  fullWidth
+                  required
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  variant="outlined"
+                  size="medium"
+                  helperText="Enter the programme name (e.g., Creative Arts Program)"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#2F699A",
+                      },
+                    },
+                    "& .MuiInputLabel-root.Mui-focused": {
+                      color: "#2F699A",
+                    },
+                  }}
+                />
+              </Grid>
+
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   name="students"
@@ -894,18 +1020,18 @@ const Programmes = () => {
                   size="medium"
                   helperText="Enter the number of students"
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#2F699A',
+                    "& .MuiOutlinedInput-root": {
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#2F699A",
                       },
                     },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#2F699A',
+                    "& .MuiInputLabel-root.Mui-focused": {
+                      color: "#2F699A",
                     },
                   }}
                 />
               </Grid>
-              
+
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   name="volunteers"
@@ -919,18 +1045,18 @@ const Programmes = () => {
                   size="medium"
                   helperText="Enter the number of volunteers"
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#2F699A',
+                    "& .MuiOutlinedInput-root": {
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#2F699A",
                       },
                     },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#2F699A',
+                    "& .MuiInputLabel-root.Mui-focused": {
+                      color: "#2F699A",
                     },
                   }}
                 />
               </Grid>
-              
+
               <Grid size={12}>
                 <TextField
                   name="specialEducators"
@@ -944,22 +1070,26 @@ const Programmes = () => {
                   size="medium"
                   helperText="Enter the number of special educators"
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#2F699A',
+                    "& .MuiOutlinedInput-root": {
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#2F699A",
                       },
                     },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#2F699A',
+                    "& .MuiInputLabel-root.Mui-focused": {
+                      color: "#2F699A",
                     },
                   }}
                 />
               </Grid>
-              
+
               {/* Replace Image URL field with ImageUpload component */}
               <Grid size={12}>
                 <Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 1, fontWeight: 500 }}
+                  >
                     Programme Image (Optional)
                   </Typography>
                   <ImageUpload
@@ -979,45 +1109,45 @@ const Programmes = () => {
           </DialogContent>
 
           <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
-            <Button 
-              onClick={handleClose} 
+            <Button
+              onClick={handleClose}
               disabled={loading}
-              sx={{ 
-                color: 'text.secondary',
-                textTransform: 'none',
+              sx={{
+                color: "text.secondary",
+                textTransform: "none",
                 fontWeight: 500,
-                '&:hover': {
-                  backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                }
+                "&:hover": {
+                  backgroundColor: "rgba(0, 0, 0, 0.04)",
+                },
               }}
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               type="submit"
               variant="contained"
               disabled={loading}
-              sx={{ 
-                backgroundColor: '#2F699A',
-                textTransform: 'none',
+              sx={{
+                backgroundColor: "#2F699A",
+                textTransform: "none",
                 fontWeight: 600,
                 px: 3,
-                '&:hover': {
-                  backgroundColor: '#25547b'
+                "&:hover": {
+                  backgroundColor: "#25547b",
                 },
-                '&:disabled': {
-                  backgroundColor: 'rgba(47, 105, 154, 0.6)'
+                "&:disabled": {
+                  backgroundColor: "rgba(47, 105, 154, 0.6)",
                 },
-                minWidth: '120px'
+                minWidth: "120px",
               }}
             >
               {loading ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <CircularProgress size={16} color="inherit" />
                   Creating...
                 </Box>
               ) : (
-                'Create Programme'
+                "Create Programme"
               )}
             </Button>
           </DialogActions>

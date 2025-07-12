@@ -27,7 +27,7 @@
 "use client";
 import React from "react";
 import { Plus } from "lucide-react";
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import CalendarPage from "./CalendarPage";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -41,18 +41,24 @@ export default function Page(props) {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center justify-center space-x-0">
-           <CalendarMonthIcon className="text-[#2F699A] mr-2" style={{ fontSize: 28 }} />
+          <CalendarMonthIcon
+            className="text-[#2F699A] mr-2"
+            style={{ fontSize: 28 }}
+          />
           <h1 className="text-2xl font-bold text-gray-800">Calendar</h1>
         </div>
-        <Link 
-          href={`/${role}/schedule-meetings/create-meeting`} 
-          className="flex items-center text-sm space-x-2 bg-[#2F699A] text-white px-4 py-2 rounded-lg hover:bg-[#25547b] transition-colors"
-        >
-          <Plus size={18} />
-          <span>Create</span>
-        </Link>
+
+        {role === "admin" && (
+          <Link
+            href={`/${role}/schedule-meetings/create-meeting`}
+            className="flex items-center text-sm space-x-2 bg-[#2F699A] text-white px-4 py-2 rounded-lg hover:bg-[#25547b] transition-colors"
+          >
+            <Plus size={18} />
+            <span>Create</span>
+          </Link>
+        )}
       </div>
-      <CalendarPage/>
+      <CalendarPage />
     </div>
   );
 }
