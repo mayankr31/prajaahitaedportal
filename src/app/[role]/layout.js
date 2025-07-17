@@ -9,8 +9,6 @@ const VALID_ROLES = ['student', 'volunteer', 'expert'];
 
 export default function Layout({ children }) {
   const { data: session, status } = useSession();
-  // const {data} = useSession();
-  // console.log("Session data:", session);
   const params = useParams();
   const router = useRouter();
   const role = params.role;
@@ -32,13 +30,13 @@ export default function Layout({ children }) {
     }
   }, []);
 
-  useEffect(() => {
-    console.log('Session status:', status);
-    console.log('Session data:', session);
-    console.log('Timestamp:', new Date().toISOString());
-    console.log('Role from URL:', role);
-    console.log('---');
-  }, [session, status, role]);
+  // useEffect(() => {
+  //   console.log('Session status:', status);
+  //   console.log('Session data:', session);
+  //   console.log('Timestamp:', new Date().toISOString());
+  //   console.log('Role from URL:', role);
+  //   console.log('---');
+  // }, [session, status, role]);
 
   // Show loading while checking authentication
   if (status === 'loading') {

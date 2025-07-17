@@ -1,3 +1,4 @@
+//src\app\api\meetings\[id]\route.js
 import { NextResponse } from 'next/server';
 import {prisma} from '@/lib/prisma';
 

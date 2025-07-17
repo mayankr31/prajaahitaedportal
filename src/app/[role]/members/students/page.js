@@ -217,7 +217,7 @@ const EditStudentDialog = ({ open, student, onClose, onSave }) => {
   const [volunteers, setVolunteers] = useState([]);
   const [dropdownsLoading, setDropdownsLoading] = useState(false);
 
-  console.log("EditStudentDialog - student:", student);
+  // console.log("EditStudentDialog - student:", student);
 
   // Fetch dropdown data
   useEffect(() => {
@@ -231,8 +231,15 @@ const EditStudentDialog = ({ open, student, onClose, onSave }) => {
             volunteerAPI.getAll(),
           ]);
 
+        // if (programmesRes.success) {
+        //   setProgrammes(programmesRes.data || []);
+        // }
         if (programmesRes.success) {
-          setProgrammes(programmesRes.data || []);
+          // Filter approved programs
+          const approvedProgrammes = programmesRes.data.filter(
+            (programme) => programme.approvalStatus === "APPROVED"
+          );
+          setProgrammes(approvedProgrammes || []);
         }
         if (organisationsRes.success) {
           setOrganisations(organisationsRes.data || []);

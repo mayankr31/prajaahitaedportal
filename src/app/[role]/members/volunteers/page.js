@@ -222,7 +222,11 @@ const EditVolunteerDialog = ({ open, volunteer, onClose, onSave }) => {
       ]);
 
       if (programmesRes.success) {
-        setProgrammes(programmesRes.data);
+        // Filter approved programs
+        const approvedProgrammes = programmesRes.data.filter(
+          (programme) => programme.approvalStatus === "APPROVED"
+        );
+        setProgrammes(approvedProgrammes || []);
       }
       if (organisationsRes.success) {
         setOrganisations(organisationsRes.data);

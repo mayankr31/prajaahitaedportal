@@ -37,6 +37,7 @@
 //   const [loadingProgrammes, setLoadingProgrammes] = useState(true);
 //   const [resetImageUpload, setResetImageUpload] = useState(null);
 //   const [formData, setFormData] = useState({
+//     name: "",
 //     students: "",
 //     volunteers: "",
 //     specialEducators: "",
@@ -141,6 +142,7 @@
 //   const handleClose = () => {
 //     setOpen(false);
 //     setFormData({
+//       name: "",
 //       students: "",
 //       volunteers: "",
 //       specialEducators: "",
@@ -179,6 +181,18 @@
 //   };
 
 //   const validateForm = () => {
+//     // Check if name is provided
+//     if (!formData.name.trim()) {
+//       setError("Programme name is required");
+//       return false;
+//     }
+
+//     // Check if name is at least 3 characters long
+//     if (formData.name.trim().length < 3) {
+//       setError("Programme name must be at least 3 characters long");
+//       return false;
+//     }
+
 //     const students = parseInt(formData.students) || 0;
 //     const volunteers = parseInt(formData.volunteers) || 0;
 //     const specialEducators = parseInt(formData.specialEducators) || 0;
@@ -209,6 +223,7 @@
 
 //     try {
 //       const submitData = {
+//         name: formData.name.trim(),
 //         groupId,
 //         students: parseInt(formData.students) || 0,
 //         volunteers: parseInt(formData.volunteers) || 0,
@@ -292,6 +307,13 @@
 //               >
 //                 {/* Programme Content */}
 //                 <div className="px-6 py-10">
+//                   {/* Programme Name */}
+//                   <div className="text-center mb-6">
+//                     <h2 className="font-bold text-lg text-gray-800 mb-2">
+//                       {programme.name}
+//                     </h2>
+//                   </div>
+
 //                   {/* Image and Info Side by Side */}
 //                   <div className="flex items-center justify-center space-x-4 mb-6">
 //                     {/* Programme Image in Circle */}
@@ -403,6 +425,31 @@
 //             )}
 
 //             <Grid container spacing={3}>
+//               {/* Programme Name Field */}
+//               <Grid size={12}>
+//                 <TextField
+//                   name="name"
+//                   label="Programme Name"
+//                   fullWidth
+//                   required
+//                   value={formData.name}
+//                   onChange={handleInputChange}
+//                   variant="outlined"
+//                   size="medium"
+//                   helperText="Enter the programme name (e.g., Creative Arts Program)"
+//                   sx={{
+//                     "& .MuiOutlinedInput-root": {
+//                       "&.Mui-focused fieldset": {
+//                         borderColor: "#2F699A",
+//                       },
+//                     },
+//                     "& .MuiInputLabel-root.Mui-focused": {
+//                       color: "#2F699A",
+//                     },
+//                   }}
+//                 />
+//               </Grid>
+
 //               <Grid size={{ xs: 12, sm: 6 }}>
 //                 <TextField
 //                   name="students"
@@ -555,7 +602,6 @@
 
 // export default Programmes;
 
-//src/app/[role]/groups/[id]/programmes/page.js
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -574,11 +620,13 @@ import {
   CircularProgress,
   Alert,
   IconButton,
+  Chip // Import Chip for status display
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
 import CloseIcon from "@mui/icons-material/Close";
-import { programmeAPI } from "@/lib/api";
-import ImageUpload from "@/app/components/ImageUpload"; // Adjust path as needed
+import { programmeAPI } from "@/lib/api"; // Ensure programmeAPI is configured
+import ImageUpload from "@/app/components/ImageUpload";
+import ApprovalProgrammesDialog from "./ApprovalProgrammesDialog"; // New: Import the approval dialog
 
 const Programmes = () => {
   const params = useParams();
@@ -601,90 +649,38 @@ const Programmes = () => {
     imageUrl: "",
   });
 
-  // Static data as fallback (you can remove this once API is working)
-  const staticProgrammesData = [
-    {
-      id: 1,
-      name: "Creative Arts Program",
-      totalMembers: 220,
-      students: 150,
-      volunteers: 50,
-      specialEducators: 20,
-      image: "/api/placeholder/300/200",
-      color: "bg-blue-100",
-    },
-    {
-      id: 2,
-      name: "Arts & Crafts Workshop",
-      totalMembers: 220,
-      students: 150,
-      volunteers: 50,
-      specialEducators: 20,
-      image: "/api/placeholder/300/200",
-      color: "bg-green-100",
-    },
-    {
-      id: 3,
-      name: "Digital Learning Hub",
-      totalMembers: 220,
-      students: 150,
-      volunteers: 50,
-      specialEducators: 20,
-      image: "/api/placeholder/300/200",
-      color: "bg-purple-100",
-    },
-    {
-      id: 4,
-      name: "Reading & Literature",
-      totalMembers: 220,
-      students: 150,
-      volunteers: 50,
-      specialEducators: 20,
-      image: "/api/placeholder/300/200",
-      color: "bg-orange-100",
-    },
-    {
-      id: 5,
-      name: "Science & Discovery",
-      totalMembers: 220,
-      students: 150,
-      volunteers: 50,
-      specialEducators: 20,
-      image: "/api/placeholder/300/200",
-      color: "bg-teal-100",
-    },
-    {
-      id: 6,
-      name: "Music & Performance",
-      totalMembers: 220,
-      students: 150,
-      volunteers: 50,
-      specialEducators: 20,
-      image: "/api/placeholder/300/200",
-      color: "bg-pink-100",
-    },
-  ];
+  // New state for approval dialog
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
+  const [pendingProgrammes, setPendingProgrammes] = useState([]);
 
-  // Load programmes on component mount
+  // Load programmes on component mount and when group ID changes
   useEffect(() => {
     loadProgrammes();
-  }, [groupId]);
+  }, [groupId, role]); // Depend on role to refetch if role changes (though typically page reloads)
 
   const loadProgrammes = async () => {
     try {
       setLoadingProgrammes(true);
-      const result = await programmeAPI.getAll(groupId);
+      const result = await programmeAPI.getAll(groupId); // API will now handle role-based filtering
       if (result.success) {
-        setProgrammes(result.data);
+        // Separate pending programmes for admin/expert view
+        if (role === "admin" || role === "expert") {
+          setProgrammes(result.data); // Admins/Experts see all, filter pending for dialog
+          setPendingProgrammes(result.data.filter(p => p.approvalStatus === "PENDING"));
+        } else {
+          // Other roles (student, volunteer) see what the API returns based on their permissions
+          setProgrammes(result.data);
+          setPendingProgrammes([]); // No pending for other roles to review
+        }
       } else {
         console.error("Failed to load programmes:", result.error);
-        // Use static data as fallback
-        setProgrammes(staticProgrammesData);
+        setProgrammes([]); // No static fallback, rely on actual data
+        setPendingProgrammes([]);
       }
     } catch (error) {
       console.error("Error loading programmes:", error);
-      // Use static data as fallback
-      setProgrammes(staticProgrammesData);
+      setProgrammes([]); // No static fallback, rely on actual data
+      setPendingProgrammes([]);
     } finally {
       setLoadingProgrammes(false);
     }
@@ -707,7 +703,6 @@ const Programmes = () => {
     });
     setError("");
     setSuccess("");
-    // Trigger image upload reset
     setResetImageUpload(Date.now());
   };
 
@@ -719,7 +714,6 @@ const Programmes = () => {
     }));
   };
 
-  // Handle image upload callbacks
   const handleImageSelect = (file) => {
     console.log("Image selected:", file.name);
   };
@@ -738,13 +732,10 @@ const Programmes = () => {
   };
 
   const validateForm = () => {
-    // Check if name is provided
     if (!formData.name.trim()) {
       setError("Programme name is required");
       return false;
     }
-
-    // Check if name is at least 3 characters long
     if (formData.name.trim().length < 3) {
       setError("Programme name must be at least 3 characters long");
       return false;
@@ -758,12 +749,10 @@ const Programmes = () => {
       setError("Numbers cannot be negative");
       return false;
     }
-
     if (students === 0 && volunteers === 0 && specialEducators === 0) {
       setError("At least one field must be greater than 0");
       return false;
     }
-
     return true;
   };
 
@@ -792,8 +781,7 @@ const Programmes = () => {
 
       if (result.success) {
         setSuccess("Programme created successfully!");
-        // Reload programmes to show the new one
-        await loadProgrammes();
+        await loadProgrammes(); // Reload programmes to show the new one with its status
         setTimeout(() => {
           handleClose();
         }, 1500);
@@ -808,14 +796,9 @@ const Programmes = () => {
     }
   };
 
-  // Handle programme click - can be used to navigate to programme details
   const handleProgrammeClick = (programmeId) => {
-    // Fixed: Include role in the route
     router.push(`/${role}/groups/${groupId}/programmes/${programmeId}`);
   };
-
-  const displayProgrammes =
-    programmes.length > 0 ? programmes : staticProgrammesData;
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
@@ -831,15 +814,25 @@ const Programmes = () => {
           <ChevronRight className="text-gray-800" size={20} />
           <h1 className="font-bold text-gray-800">All Programmes</h1>
         </div>
-        {(role === "volunteer" || role === "expert" || role === "admin") && (
-          <button
-            onClick={handleOpen}
-            className="flex items-center text-sm space-x-2 bg-[#2F699A] text-white px-4 py-2 rounded-lg hover:bg-[#25547b] transition-colors"
-          >
-            <Plus size={18} />
-            <span>Add Programmes</span>
-          </button>
-        )}
+        <div className="flex space-x-4"> {/* Added a div for buttons */}
+          {(role === "admin" || role === "expert") && pendingProgrammes.length > 0 && (
+            <button
+              onClick={() => setApprovalDialogOpen(true)}
+              className="flex items-center text-sm space-x-2 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors"
+            >
+              <span>Review Programmes ({pendingProgrammes.length})</span>
+            </button>
+          )}
+          {(role === "volunteer" || role === "expert" || role === "admin") && (
+            <button
+              onClick={handleOpen}
+              className="flex items-center text-sm space-x-2 bg-[#2F699A] text-white px-4 py-2 rounded-lg hover:bg-[#25547b] transition-colors"
+            >
+              <Plus size={18} />
+              <span>Add Programmes</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Loading State */}
@@ -849,72 +842,106 @@ const Programmes = () => {
         </div>
       ) : (
         /* Programmes Grid - 3 cards per row */
-        <div className="grid grid-cols-3 gap-8">
-          {displayProgrammes.map((programme) => {
-            const totalMembers =
-              programme.totalMembers ||
-              programme.students +
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+          {programmes.length === 0 ? (
+            <Typography variant="h6" color="text.secondary" className="col-span-full text-center py-10">
+              No programmes found for this group.
+            </Typography>
+          ) : (
+            programmes.map((programme) => {
+              const totalMembers =
+                programme.students +
                 programme.volunteers +
                 programme.specialEducators;
 
-            return (
-              <div
-                key={programme.id}
-                className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden"
-              >
-                {/* Programme Content */}
-                <div className="px-6 py-10">
-                  {/* Programme Name */}
-                  <div className="text-center mb-6">
-                    <h2 className="font-bold text-lg text-gray-800 mb-2">
-                      {programme.name}
-                    </h2>
-                  </div>
+              // Determine chip color based on approval status
+              let chipColor = "default";
+              let chipLabel = programme.approvalStatus;
+              if (programme.approvalStatus === "PENDING") {
+                chipColor = "warning";
+              } else if (programme.approvalStatus === "APPROVED") {
+                chipColor = "success";
+              } else if (programme.approvalStatus === "REJECTED") {
+                chipColor = "error";
+              }
 
-                  {/* Image and Info Side by Side */}
-                  <div className="flex items-center justify-center space-x-4 mb-6">
-                    {/* Programme Image in Circle */}
-                    <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <img
-                        src={
-                          programme.image ||
-                          programme.imageUrl ||
-                          "/api/placeholder/300/200"
-                        }
-                        alt={programme.name || "Programme"}
-                        className="w-12 h-12 object-cover rounded-full"
-                      />
+              // Decide whether to show the card based on the role and approval status
+              const shouldShowCard =
+                role === "admin" ||
+                role === "expert" ||
+                (role === "volunteer" && (programme.createdById === params.user?.id || programme.approvalStatus === "APPROVED")) || // Check createdById for volunteer's own items
+                (role === "student" && programme.approvalStatus === "APPROVED");
+
+              if (!shouldShowCard) return null; // Don't render if not allowed
+
+              return (
+                <div
+                  key={programme.id}
+                  className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden relative" // Added relative for positioning chip
+                >
+                  {/* Approval Status Chip for Admins, Experts, and Volunteers (for their own) */}
+                  {(role === "admin" || role === "expert" || (role === "volunteer" && programme.createdById === params.user?.id)) && (
+                    <Chip
+                      label={chipLabel}
+                      color={chipColor}
+                      size="small"
+                      sx={{ position: 'absolute', top: 12, right: 12, zIndex: 1 }}
+                    />
+                  )}
+
+                  {/* Programme Content */}
+                  <div className="px-6 py-10">
+                    {/* Programme Name */}
+                    <div className="text-center mb-6">
+                      <h2 className="font-bold text-lg text-gray-800 mb-2">
+                        {programme.name}
+                      </h2>
                     </div>
 
-                    {/* Programme Info */}
-                    <div className="flex-1">
-                      <div className="mb-3">
-                        <h3 className="font-semibold text-gray-800 text-sm mb-1">
-                          Total Members : {totalMembers}
-                        </h3>
+                    {/* Image and Info Side by Side */}
+                    <div className="flex items-center justify-center space-x-4 mb-6">
+                      {/* Programme Image in Circle */}
+                      <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <img
+                          src={
+                            programme.imageUrl ||
+                            "/api/placeholder/300/200"
+                          }
+                          alt={programme.name || "Programme"}
+                          className="w-12 h-12 object-cover rounded-full"
+                        />
                       </div>
 
-                      <div className="space-y-1 text-xs text-gray-600">
-                        <div>Students : {programme.students}</div>
-                        <div>Volunteers : {programme.volunteers}</div>
-                        <div>
-                          Special Educators : {programme.specialEducators}
+                      {/* Programme Info */}
+                      <div className="flex-1">
+                        <div className="mb-3">
+                          <h3 className="font-semibold text-gray-800 text-sm mb-1">
+                            Total Members : {totalMembers}
+                          </h3>
+                        </div>
+
+                        <div className="space-y-1 text-xs text-gray-600">
+                          <div>Students : {programme.students}</div>
+                          <div>Volunteers : {programme.volunteers}</div>
+                          <div>
+                            Special Educators : {programme.specialEducators}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* See Details Button */}
-                  <button
-                    onClick={() => handleProgrammeClick(programme.id)}
-                    className="w-full bg-[#2F699A] text-sm text-white py-3 rounded-lg hover:bg-[#25547b] transition-colors font-medium"
-                  >
-                    See Details
-                  </button>
+                    {/* See Details Button */}
+                    <button
+                      onClick={() => handleProgrammeClick(programme.id)}
+                      className="w-full bg-[#2F699A] text-sm text-white py-3 rounded-lg hover:bg-[#25547b] transition-colors font-medium"
+                    >
+                      See Details
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       )}
 
@@ -982,8 +1009,7 @@ const Programmes = () => {
             )}
 
             <Grid container spacing={3}>
-              {/* Programme Name Field */}
-              <Grid size={12}>
+              <Grid item size={{xs:12}}> {/* Use item for Grid */}
                 <TextField
                   name="name"
                   label="Programme Name"
@@ -1007,7 +1033,7 @@ const Programmes = () => {
                 />
               </Grid>
 
-              <Grid size={{ xs: 12, sm: 6 }}>
+              <Grid item size={{xs:12, sm:6}}> {/* Use item for Grid */}
                 <TextField
                   name="students"
                   label="Number of Students"
@@ -1032,7 +1058,7 @@ const Programmes = () => {
                 />
               </Grid>
 
-              <Grid size={{ xs: 12, sm: 6 }}>
+              <Grid item size={{xs:12, sm:6}}> {/* Use item for Grid */}
                 <TextField
                   name="volunteers"
                   label="Number of Volunteers"
@@ -1057,7 +1083,7 @@ const Programmes = () => {
                 />
               </Grid>
 
-              <Grid size={12}>
+              <Grid item size={{xs:12}}> {/* Use item for Grid */}
                 <TextField
                   name="specialEducators"
                   label="Special Educators"
@@ -1082,8 +1108,7 @@ const Programmes = () => {
                 />
               </Grid>
 
-              {/* Replace Image URL field with ImageUpload component */}
-              <Grid size={12}>
+              <Grid item size={{xs:12}}> {/* Use item for Grid */}
                 <Box>
                   <Typography
                     variant="body2"
@@ -1153,6 +1178,16 @@ const Programmes = () => {
           </DialogActions>
         </form>
       </Dialog>
+
+      {/* Approval Programmes Dialog */}
+      {(role === "admin" || role === "expert") && (
+        <ApprovalProgrammesDialog
+          open={approvalDialogOpen}
+          onClose={() => setApprovalDialogOpen(false)}
+          pendingProgrammes={pendingProgrammes}
+          onApprovalStatusChange={loadProgrammes} // Reload programmes after approval/rejection
+        />
+      )}
     </div>
   );
 };

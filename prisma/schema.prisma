@@ -9,6 +9,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id            String          @id @default(cuid())
   name          String?
@@ -16,6 +22,7 @@ model User {
   emailVerified DateTime?
   password      String?
   age           Int?
+  dateOfBirth     DateTime? // New field for date of birth
   role          String?         
   image         String?
   companyName   String?
@@ -29,6 +36,23 @@ model User {
   studentProfile Student?
   volunteerProfile Volunteer?
   expertProfile Expert?
+
+  // Relationships for created and approved items
+  createdGroups  Group[] @relation("CreatedGroups")
+  approvedGroups Group[] @relation("ApprovedGroups")
+
+  createdProgrammes  Programme[]    @relation("CreatedProgrammes") // New relation
+  approvedProgrammes Programme[]    @relation("ApprovedProgrammes") // New relation
+
+  createdActivities Activity[] @relation("CreatedActivities") // New line
+  approvedActivities Activity[] @relation("ApprovedActivities") // New line
+
+  createdPrerequisites Prerequisite[] @relation("CreatedPrerequisites") // New
+  approvedPrerequisites Prerequisite[] @relation("ApprovedPrerequisites") // New
+
+  createdMeetings  Meeting[] @relation("CreatedMeetings") // New relation for meetings created by user
+  approvedMeetings Meeting[] @relation("ApprovedMeetings") // New relation for meetings approved by user
+
  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -99,6 +123,14 @@ model Group {
   // Relation to programmes
   programmes Programme[]
 
+  // Approval fields
+  approvalStatus  ApprovalStatus @default(PENDING)
+  approvedById    String?
+  approvedBy      User?          @relation("ApprovedGroups", fields: [approvedById], references: [id])
+  rejectionMessage String?
+  createdById     String
+  createdBy       User           @relation("CreatedGroups", fields: [createdById], references: [id])
+
   @@map("groups")
 }
 
@@ -120,6 +152,14 @@ model Programme {
   enrolledStudents    Student[]   @relation("enrolledStudents")
   enrolledVolunteers  Volunteer[] @relation("enrolledVolunteers")
   enrolledExperts     Expert[]    @relation("enrolledExperts")
+
+  // Approval fields for Programme
+  approvalStatus    ApprovalStatus @default(PENDING) // New field
+  approvedById      String?        // New field
+  approvedBy        User?          @relation("ApprovedProgrammes", fields: [approvedById], references: [id]) // New relation
+  rejectionMessage  String?        // New field
+  createdById       String         // New field
+  createdBy         User           @relation("CreatedProgrammes", fields: [createdById], references: [id]) // New relation
 
   @@map("programmes")
 }
@@ -154,6 +194,15 @@ model Meeting {
   makeOpenEvent Boolean  @default(false)
   videoCall     String?  // zoom, google-meet, microsoft-teams, etc.
   videoCallLink String?
+
+  // Approval fields (New)
+  approvalStatus   ApprovalStatus @default(PENDING)
+  approvedById     String?
+  approvedBy       User?          @relation("ApprovedMeetings", fields: [approvedById], references: [id])
+  rejectionMessage String?
+  createdById      String
+  createdBy        User           @relation("CreatedMeetings", fields: [createdById], references: [id])
+
  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -266,6 +315,14 @@ model Activity {
   feedback      String?         // Text field for feedback  
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+
+  // Approval fields for Activity
+  approvalStatus   ApprovalStatus @default(PENDING) // New field
+  approvedById     String?                          // New field
+  approvedBy       User?          @relation("ApprovedActivities", fields: [approvedById], references: [id]) // New relation
+  rejectionMessage String?                          // New field
+  createdById      String                         // New field
+  createdBy        User           @relation("CreatedActivities", fields: [createdById], references: [id]) // New relation
   
   // Relationship to prerequisites
   prerequisites Prerequisite[]
@@ -282,6 +339,15 @@ model Prerequisite {
   // Foreign key to activity
   activityId String
   activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  // Approval fields (New)
+  approvalStatus    ApprovalStatus @default(PENDING)
+  approvedById      String?
+  approvedBy        User?          @relation("ApprovedPrerequisites", fields: [approvedById], references: [id])
+  rejectionMessage  String?
+  createdById       String // Who created the prerequisite
+  createdBy         User           @relation("CreatedPrerequisites", fields: [createdById], references: [id])
+
   
   @@map("prerequisites")
 }

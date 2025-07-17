@@ -1,3 +1,4 @@
+// //src\app\api\activities\route.js
 // import { NextResponse } from 'next/server';
 // import {prisma} from '@/lib/prisma';
 
@@ -33,12 +34,12 @@
 // export async function POST(request) {
 //   try {
 //     const body = await request.json();
-//     const { imageUrl, title, date, prerequisites } = body;
+//     const { imageUrl, title, date, time, category, pdfUrl, feedback, prerequisites } = body;
 
 //     // Validate required fields
-//     if (!imageUrl || !title || !date) {
+//     if (!imageUrl || !title || !date || !category) {
 //       return NextResponse.json(
-//         { success: false, error: 'Missing required fields: imageUrl, title, date' },
+//         { success: false, error: 'Missing required fields: imageUrl, title, date, category' },
 //         { status: 400 }
 //       );
 //     }
@@ -48,6 +49,10 @@
 //         imageUrl,
 //         title,
 //         date: new Date(date),
+//         time: time || null,
+//         category,
+//         pdfUrl: pdfUrl || null,
+//         feedback: feedback || null,
 //         prerequisites: prerequisites ? {
 //           create: prerequisites.map((prereq) => ({
 //             imageUrl: prereq.imageUrl
@@ -72,21 +77,65 @@
 //   }
 // }
 
+// src/app/api/activities/route.js
 import { NextResponse } from 'next/server';
-import {prisma} from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth'; // Assuming you have NextAuth.js configured with this import
 
-// GET all activities with prerequisites
+// GET all activities with prerequisites, filtered by approval status and user role
 export async function GET(request) {
+  const session = await auth(); // Get session
+  if (!session) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  const userRole = session.user.role;
+  const userId = session.user.id;
+
   try {
     const { searchParams } = new URL(request.url);
     const includePrerequisites = searchParams.get('include') === 'prerequisites';
-    
+
+    let whereClause = {};
+
+    if (userRole === "student") {
+      // Students only see approved activities
+      whereClause.approvalStatus = "APPROVED";
+    } else if (userRole === "volunteer") {
+      // Volunteers see their own created activities (pending/rejected/approved)
+      // and all approved activities
+      whereClause = {
+        OR: [
+          { createdById: userId },
+          { approvalStatus: "APPROVED" }
+        ]
+      };
+    }
+    // Admin and Expert can see all activities (they'll filter on the frontend for pending)
+
     const activities = await prisma.activity.findMany({
+      where: whereClause,
       include: {
-        prerequisites: includePrerequisites
+        prerequisites: includePrerequisites,
+        createdBy: { // Include createdBy user details
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          }
+        },
+        approvedBy: { // Include approvedBy user details
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          }
+        }
       },
       orderBy: {
-        date: 'desc'
+        date: 'desc' // Changed from createdAt to date for more logical ordering for activities
       }
     });
 
@@ -105,27 +154,41 @@ export async function GET(request) {
 
 // POST create new activity
 export async function POST(request) {
+  const session = await auth(); // Get session
+  if (!session) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  const userRole = session.user.role;
+  const userId = session.user.id;
+
   try {
     const body = await request.json();
-    const { imageUrl, title, date, time, category, pdfUrl, feedback, prerequisites } = body;
+    const { imageUrl, title, date, time, category, pdfUrl, prerequisites } = body; // Removed feedback as it's not set on creation
 
     // Validate required fields
-    if (!imageUrl || !title || !date || !category) {
+    if (!title || !date || !category) { // imageUrl is now defaultable, so not strictly required here
       return NextResponse.json(
-        { success: false, error: 'Missing required fields: imageUrl, title, date, category' },
+        { success: false, error: 'Missing required fields: title, date, category' },
         { status: 400 }
       );
     }
 
+    let approvalStatus = "PENDING";
+    if (userRole === "admin" || userRole === "expert") {
+      approvalStatus = "APPROVED";
+    }
+
     const activity = await prisma.activity.create({
       data: {
-        imageUrl,
+        imageUrl: imageUrl || "https://techterms.com/img/lg/pdf_109.png", // Provide a default if not uploaded
         title,
         date: new Date(date),
         time: time || null,
         category,
         pdfUrl: pdfUrl || null,
-        feedback: feedback || null,
+        approvalStatus: approvalStatus,
+        createdById: userId, // Set createdBy to the current user's ID
         prerequisites: prerequisites ? {
           create: prerequisites.map((prereq) => ({
             imageUrl: prereq.imageUrl
@@ -133,13 +196,22 @@ export async function POST(request) {
         } : undefined
       },
       include: {
-        prerequisites: true
+        prerequisites: true,
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          }
+        }
       }
     });
 
     return NextResponse.json({
       success: true,
-      data: activity
+      data: activity,
+      message: 'Activity created successfully'
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating activity:', error);
