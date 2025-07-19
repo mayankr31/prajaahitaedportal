@@ -121,7 +121,7 @@ export default function ApprovalProgrammesDialog({ open, onClose, pendingProgram
                 {pendingProgrammes.map((programme) => (
                   <ListItem
                     key={programme.id}
-                    button
+                    button="true"
                     onClick={() => handleProgrammeSelect(programme)}
                     selected={selectedProgramme?.id === programme.id}
                     sx={{ mb: 1, borderRadius: '8px', '&.Mui-selected': { backgroundColor: '#e0f2f7' } }}

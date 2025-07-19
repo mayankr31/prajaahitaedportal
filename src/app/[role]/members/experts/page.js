@@ -5,6 +5,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { expertAPI, organisationAPI, programmeAPI, userAPI } from "@/lib/api";
 import {
+  Avatar,
   Button,
   Dialog,
   DialogActions,
@@ -19,6 +20,7 @@ import {
   TextField,
 } from "@mui/material";
 import { useParams } from "next/navigation";
+import ProfilePictureUpload from "@/app/components/ProfilePictureUpload";
 
 const ExpertCard = ({
   expert,
@@ -172,19 +174,22 @@ const ExpertCard = ({
 const EditExpertDialog = ({ open, expert, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     name: "",
-    age: "",
+    // age: "",
     email: "",
     profession: "",
     educationalQualification: "",
     feedback: "",
     programmeEnrolledId: "",
     organisationId: "",
+    dateOfBirth: "",
+    image: "",
   });
 
   const [loading, setLoading] = useState(false);
   const [programmes, setProgrammes] = useState([]);
   const [organisations, setOrganisations] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
+  const [imageUploadResetTrigger, setImageUploadResetTrigger] = useState(0);
 
   // Fetch dropdown data
   const fetchDropdownData = async () => {
@@ -219,26 +224,74 @@ const EditExpertDialog = ({ open, expert, onClose, onSave }) => {
   }, [open]);
 
   useEffect(() => {
-    if (expert) {
+    if (open && expert) {
       const profile = expert.profile;
       setFormData({
         name: profile?.name || expert.name || "",
-        age: profile?.age || expert.age || "",
+        // age: profile?.age || expert.age || "",
         email: profile?.email || expert.email || "",
         profession: profile?.profession || "",
         educationalQualification: profile?.educationalQualification || "",
         feedback: profile?.feedback || "",
         programmeEnrolledId: profile?.programmeEnrolledId || "",
         organisationId: profile?.organisationId || "",
+        dateOfBirth: expert.dateOfBirth
+          ? new Date(expert.dateOfBirth).toISOString().split("T")[0]
+          : "", // Populate dateOfBirth
+        image: expert.image || "", // Populate image
       });
+      setImageUploadResetTrigger((prev) => prev + 1); // Reset image upload component
     }
-  }, [expert]);
+  }, [open, expert]);
+
+  // Effect to calculate age when dateOfBirth changes
+  useEffect(() => {
+    if (formData.dateOfBirth) {
+      const birthDate = new Date(formData.dateOfBirth);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDifference = today.getMonth() - birthDate.getMonth();
+      if (
+        monthDifference < 0 ||
+        (monthDifference === 0 && today.getDate() < birthDate.getDate())
+      ) {
+        age--;
+      }
+      setFormData((prev) => ({
+        ...prev,
+        age: age.toString(), // Store age as string for TextField compatibility if needed elsewhere, but send as int to backend
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        age: "",
+      }));
+    }
+  }, [formData.dateOfBirth]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleImageUploadComplete = (path) => {
+    setFormData((prev) => ({
+      ...prev,
+      image: path,
+    }));
+  };
+
+  const getInitials = (name) => {
+    if (!name) return "";
+    const nameParts = name.split(" ");
+    if (nameParts.length > 1) {
+      return (
+        nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
+      ).toUpperCase();
+    }
+    return nameParts[0].charAt(0).toUpperCase();
   };
 
   const handleSave = async () => {
@@ -248,29 +301,59 @@ const EditExpertDialog = ({ open, expert, onClose, onSave }) => {
     try {
       let result;
 
-      const saveData = {
+      const dataToSave = {
         ...formData,
-        age: formData.age ? parseInt(formData.age) : null,
-        programmeEnrolledId: formData.programmeEnrolledId || null,
-        organisationId: formData.organisationId || null,
+        age: formData.age ? parseInt(formData.age) : null, //ensure age is an integer
+        dateOfBirth: formData.dateOfBirth || null,
       };
 
+      const userUpdateData = {
+        name: dataToSave.name,
+        email: dataToSave.email,
+        age: dataToSave.age,
+        dateOfBirth: dataToSave.dateOfBirth,
+        image: dataToSave.image,
+      };
+
+      const expertProfileUpdateData = {
+        name: dataToSave.name,
+        email: dataToSave.email,
+        educationalQualification: dataToSave.educationalQualification,
+        profession: dataToSave.profession,
+        feedback: dataToSave.feedback,
+        programmeEnrolledId: dataToSave.programmeEnrolledId || null,
+        organisationId: dataToSave.organisationId || null,
+        age: dataToSave.age,
+      };
+
+      const userUpdateResult = await userAPI.update(expert.id, userUpdateData);
+
+      if (!userUpdateResult.success) {
+        alert("Failed to update user basic info: " + userUpdateResult.message);
+        setLoading(false);
+        return;
+      }
+
       if (expert.profile) {
-        // Update existing expert profile
-        result = await expertAPI.update(expert.profile.id, saveData);
+        //update existing expert profile
+        result = await expertAPI.update(
+          expert.profile.id,
+          expertProfileUpdateData
+        );
       } else {
-        // Create new expert profile
+        //create new expert profile
         result = await expertAPI.create({
-          ...saveData,
           userId: expert.id,
+          ...expertProfileUpdateData,
         });
       }
 
       if (result.success) {
+        // Pass the updated user data including profile back to parent
         onSave(result.data);
         onClose();
       } else {
-        alert("Failed to save expert: " + result.message);
+        alert("Failed to save expert profile: " + result.message);
       }
     } catch (error) {
       console.error("Error saving expert:", error);
@@ -280,11 +363,48 @@ const EditExpertDialog = ({ open, expert, onClose, onSave }) => {
     }
   };
 
+  const profileButtonText = formData.image
+    ? "Change Profile Picture"
+    : "Upload Profile Picture";
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>Edit Expert Profile</DialogTitle>
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
+          {/* Profile Picture Section */}
+          <Grid
+            size={{ xs: 12 }}
+            sx={{ display: "flex", alignItems: "center", mb: 2 }}
+          >
+            {formData.image ? (
+              <Avatar
+                src={formData.image}
+                alt="Profile"
+                sx={{ width: 120, height: 120, mr: 3 }}
+              />
+            ) : (
+              <Avatar
+                sx={{
+                  width: 120,
+                  height: 120,
+                  mr: 3,
+                  bgcolor: "primary.main",
+                  fontSize: "3rem",
+                }}
+              >
+                {getInitials(formData.name || expert?.name)}
+              </Avatar>
+            )}
+            <ProfilePictureUpload
+              onUploadComplete={handleImageUploadComplete}
+              onError={(msg) => alert(msg)}
+              buttonText={profileButtonText}
+              disabled={loading || loadingData}
+              resetTrigger={imageUploadResetTrigger}
+            />
+          </Grid>
+
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               label="Name"
@@ -294,13 +414,25 @@ const EditExpertDialog = ({ open, expert, onClose, onSave }) => {
               required
             />
           </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
+          {/* <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               label="Age"
               type="number"
               fullWidth
               value={formData.age}
               onChange={(e) => handleInputChange("age", e.target.value)}
+            />
+          </Grid> */}
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              label="Date of Birth"
+              type="date"
+              fullWidth
+              value={formData.dateOfBirth}
+              onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
+              InputLabelProps={{
+                shrink: true,
+              }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -478,6 +610,20 @@ const ExpertInfo = ({ expert, onClose }) => {
     alert("Expert data copied to clipboard");
   };
 
+  const getInitials = (name) => {
+    if (!name) return "";
+    const nameParts = name.split(" ");
+    if (nameParts.length > 1) {
+      return (
+        nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
+      ).toUpperCase();
+    }
+    return nameParts[0].charAt(0).toUpperCase();
+  };
+
+  const expertName = profile?.name || expert.name || expert.email;
+  const initials = getInitials(expertName);
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 h-fit">
       <div className="flex justify-end items-start mb-12">
@@ -498,13 +644,18 @@ const ExpertInfo = ({ expert, onClose }) => {
       </div>
 
       <div className="flex items-center justify-center w-full">
-        <div className="w-32 h-32 bg-gray-300 rounded-full flex-shrink-0 mr-4">
-          <img
-            src={expert.image || "/api/placeholder/128/128"}
-            alt={profile?.name || expert.name || expert.email}
-            className="w-32 h-32 rounded-full object-cover"
-          />
-        </div>
+        <Avatar
+          src={expert.image || undefined}
+          alt={expertName}
+          sx={{
+            width: 128,
+            height: 128,
+            fontSize: "2rem",
+            bgcolor: expert.image ? undefined : "primary.main",
+          }}
+        >
+          {!expert.image && initials}
+        </Avatar>
       </div>
 
       <div className="space-y-1 text-xs mt-6">
@@ -608,6 +759,8 @@ const ExpertsPage = () => {
     if (selectedExpert && selectedExpert.id === updatedExpert.userId) {
       setSelectedExpert({ ...selectedExpert, profile: updatedExpert });
     }
+
+    fetchExperts(currentPage);
   };
 
   const handleExpertDelete = (deletedId) => {
@@ -668,7 +821,7 @@ const ExpertsPage = () => {
                 <div>Programmes Enrolled</div>
                 <div>Organisation</div>
                 <div>Feedback</div>
-                {(role === "admin") && <div>Actions</div>}
+                {role === "admin" && <div>Actions</div>}
               </div>
             </div>
 

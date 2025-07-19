@@ -1,7 +1,7 @@
 "use client";
 import { Close, ContentCopy, Delete } from "@mui/icons-material";
 import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from '@mui/icons-material/Delete';
+import DeleteIcon from "@mui/icons-material/Delete";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -24,8 +24,10 @@ import {
   Select,
   MenuItem,
   FormHelperText,
+  Avatar,
 } from "@mui/material";
 import { useParams } from "next/navigation";
+import ProfilePictureUpload from "@/app/components/ProfilePictureUpload";
 
 const VolunteerCard = ({
   volunteer,
@@ -65,54 +67,68 @@ const VolunteerCard = ({
   };
 
   useEffect(() => {
-      const fetchNames = async () => {
-        setLoading(true);
-        
-        try {
-          // Fetch volunteer name if volunteerAssignedId exists
-          if (volunteerProfile?.expertAssignedId) {
-            try {
-              const expertResponse = await expertAPI.getById(volunteerProfile.expertAssignedId);
-              if (expertResponse.success && expertResponse.data) {
-                setExpertName(expertResponse.data.name || expertResponse.data.profile?.name || '-');
-              }
-            } catch (error) {
-              console.error('Error fetching expert:', error);
+    const fetchNames = async () => {
+      setLoading(true);
+
+      try {
+        // Fetch volunteer name if volunteerAssignedId exists
+        if (volunteerProfile?.expertAssignedId) {
+          try {
+            const expertResponse = await expertAPI.getById(
+              volunteerProfile.expertAssignedId
+            );
+            if (expertResponse.success && expertResponse.data) {
+              setExpertName(
+                expertResponse.data.name ||
+                  expertResponse.data.profile?.name ||
+                  "-"
+              );
             }
+          } catch (error) {
+            console.error("Error fetching expert:", error);
           }
-  
-          // Fetch programme name if programmeEnrolledId exists
-          if (volunteerProfile?.programmeEnrolledId) {
-            try {
-              const programmeResponse = await programmeAPI.getById(volunteerProfile.programmeEnrolledId);
-              if (programmeResponse.success && programmeResponse.data) {
-                setProgrammeName(programmeResponse.data.name || '-');
-              }
-            } catch (error) {
-              console.error('Error fetching programme:', error);
-            }
-          }
-  
-          // Fetch organisation name if organisationId exists
-          if (volunteerProfile?.organisationId) {
-            try {
-              const organisationResponse = await organisationAPI.getById(volunteerProfile.organisationId);
-              if (organisationResponse.success && organisationResponse.data) {
-                setOrganisationName(organisationResponse.data.name || '-');
-              }
-            } catch (error) {
-              console.error('Error fetching organisation:', error);
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching names:', error);
-        } finally {
-          setLoading(false);
         }
-      };
-  
-      fetchNames();
-    }, [volunteerProfile?.expertAssignedId, volunteerProfile?.programmeEnrolledId, volunteerProfile?.organisationId]);
+
+        // Fetch programme name if programmeEnrolledId exists
+        if (volunteerProfile?.programmeEnrolledId) {
+          try {
+            const programmeResponse = await programmeAPI.getById(
+              volunteerProfile.programmeEnrolledId
+            );
+            if (programmeResponse.success && programmeResponse.data) {
+              setProgrammeName(programmeResponse.data.name || "-");
+            }
+          } catch (error) {
+            console.error("Error fetching programme:", error);
+          }
+        }
+
+        // Fetch organisation name if organisationId exists
+        if (volunteerProfile?.organisationId) {
+          try {
+            const organisationResponse = await organisationAPI.getById(
+              volunteerProfile.organisationId
+            );
+            if (organisationResponse.success && organisationResponse.data) {
+              setOrganisationName(organisationResponse.data.name || "-");
+            }
+          } catch (error) {
+            console.error("Error fetching organisation:", error);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching names:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNames();
+  }, [
+    volunteerProfile?.expertAssignedId,
+    volunteerProfile?.programmeEnrolledId,
+    volunteerProfile?.organisationId,
+  ]);
 
   return (
     <div className="bg-white rounded-lg border border-gray-700 p-6 hover:shadow-md transition-shadow">
@@ -164,25 +180,24 @@ const VolunteerCard = ({
           </button>
         </div>
 
-        {(role === "expert" || role === "admin")&&(
+        {(role === "expert" || role === "admin") && (
           <div className="flex justify-start">
-          <button
-            onClick={() => onEditClick(volunteer)}
-            className="text-[#4378a4] hover:text-[#2a5e8a] p-1 rounded hover:bg-gray-100"
-            title="Edit Volunteer"
-          >
-            <EditIcon fontSize="small" />
-          </button>
-          <button 
-            onClick={handleDelete}
-            className="text-[#4378a4] hover:text-[#2a5e8a] p-1 rounded hover:bg-gray-100"
-            title="Edit Student"
-          >
-            <DeleteIcon fontSize="small" />
-          </button>
-        </div>
+            <button
+              onClick={() => onEditClick(volunteer)}
+              className="text-[#4378a4] hover:text-[#2a5e8a] p-1 rounded hover:bg-gray-100"
+              title="Edit Volunteer"
+            >
+              <EditIcon fontSize="small" />
+            </button>
+            <button
+              onClick={handleDelete}
+              className="text-[#4378a4] hover:text-[#2a5e8a] p-1 rounded hover:bg-gray-100"
+              title="Edit Student"
+            >
+              <DeleteIcon fontSize="small" />
+            </button>
+          </div>
         )}
-        
       </div>
     </div>
   );
@@ -191,7 +206,7 @@ const VolunteerCard = ({
 const EditVolunteerDialog = ({ open, volunteer, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     name: "",
-    age: "",
+    // age: "",
     email: "",
     contactNumber: "",
     educationalQualification: "",
@@ -203,13 +218,16 @@ const EditVolunteerDialog = ({ open, volunteer, onClose, onSave }) => {
     programmeEnrolledId: "",
     organisationId: "",
     expertAssignedId: "",
-  });  
+    dateOfBirth: "", // New field for date of birth
+    image: "",
+  });
 
   const [loading, setLoading] = useState(false);
   const [programmes, setProgrammes] = useState([]);
   const [organisations, setOrganisations] = useState([]);
   const [experts, setExperts] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
+  const [imageUploadResetTrigger, setImageUploadResetTrigger] = useState(0);
 
   // Fetch dropdown data
   const fetchDropdownData = async () => {
@@ -248,11 +266,11 @@ const EditVolunteerDialog = ({ open, volunteer, onClose, onSave }) => {
   }, [open]);
 
   useEffect(() => {
-    if (volunteer) {
+    if (open && volunteer) {
       const profile = volunteer.profile;
       setFormData({
         name: profile?.name || volunteer.name || "",
-        age: profile?.age || volunteer.age || "",
+        // age: profile?.age || volunteer.age || "",
         email: profile?.email || volunteer.email || "",
         contactNumber: profile?.contactNumber || "",
         educationalQualification: profile?.educationalQualification || "",
@@ -264,15 +282,63 @@ const EditVolunteerDialog = ({ open, volunteer, onClose, onSave }) => {
         programmeEnrolledId: profile?.programmeEnrolledId || "",
         organisationId: profile?.organisationId || "",
         expertAssignedId: profile?.expertAssignedId || "",
+        dateOfBirth: volunteer.dateOfBirth
+          ? new Date(volunteer.dateOfBirth).toISOString().split("T")[0]
+          : "", // Populate dateOfBirth
+        image: volunteer.image || "",
       });
+      setImageUploadResetTrigger((prev) => prev + 1); // Reset image upload component
     }
-  }, [volunteer]);
+  }, [volunteer, open]);
+
+  // Effect to calculate age when dateOfBirth changes
+  useEffect(() => {
+    if (formData.dateOfBirth) {
+      const birthDate = new Date(formData.dateOfBirth);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDifference = today.getMonth() - birthDate.getMonth();
+      if (
+        monthDifference < 0 ||
+        (monthDifference === 0 && today.getDate() < birthDate.getDate())
+      ) {
+        age--;
+      }
+      setFormData((prev) => ({
+        ...prev,
+        age: age.toString(), // Store age as string for TextField compatibility if needed elsewhere, but send as int to backend
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        age: "",
+      }));
+    }
+  }, [formData.dateOfBirth]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleImageUploadComplete = (path) => {
+    setFormData((prev) => ({
+      ...prev,
+      image: path,
+    }));
+  };
+
+  const getInitials = (name) => {
+    if (!name) return "";
+    const nameParts = name.split(" ");
+    if (nameParts.length > 1) {
+      return (
+        nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
+      ).toUpperCase();
+    }
+    return nameParts[0].charAt(0).toUpperCase();
   };
 
   const handleSave = async () => {
@@ -282,30 +348,68 @@ const EditVolunteerDialog = ({ open, volunteer, onClose, onSave }) => {
     try {
       let result;
 
-      const saveData = {
+      const dataToSave = {
         ...formData,
-        age: formData.age ? parseInt(formData.age) : null,
-        programmeEnrolledId: formData.programmeEnrolledId || null,
-        organisationId: formData.organisationId || null,
-        expertAssignedId: formData.expertAssignedId || null,
+        age: formData.age ? parseInt(formData.age) : null, //ensure age is an integer
+        dateOfBirth: formData.dateOfBirth || null,
       };
 
+      const userUpdateData = {
+        name: dataToSave.name,
+        email: dataToSave.email,
+        age: dataToSave.age,
+        dateOfBirth: dataToSave.dateOfBirth,
+        phoneNumber: dataToSave.contactNumber,
+        image: dataToSave.image,
+      };
+
+      const volunteerProfileUpdateData = {
+        name: dataToSave.name,
+        email: dataToSave.email,
+        contactNumber: dataToSave.contactNumber,
+        educationalQualification: dataToSave.educationalQualification,
+        preferredLanguages: dataToSave.preferredLanguages,
+        experience: dataToSave.experience,
+        profession: dataToSave.profession,
+        whatMotivatesYou: dataToSave.whatMotivatesYou,
+        feedback: dataToSave.feedback,
+        programmeEnrolledId: dataToSave.programmeEnrolledId || null,
+        organisationId: dataToSave.organisationId || null,
+        expertAssignedId: dataToSave.expertAssignedId || null,
+        age: dataToSave.age,
+      };
+
+      const userUpdateResult = await userAPI.update(
+        volunteer.id,
+        userUpdateData
+      );
+
+      if (!userUpdateResult.success) {
+        alert("Failed to update user basic info: " + userUpdateResult.message);
+        setLoading(false);
+        return;
+      }
+
       if (volunteer.profile) {
-        // Update existing volunteer profile
-        result = await volunteerAPI.update(volunteer.profile.id, saveData);
+        //update existing volunteer profile
+        result = await volunteerAPI.update(
+          volunteer.profile.id,
+          volunteerProfileUpdateData
+        );
       } else {
-        // Create new volunteer profile
+        //create new volunteer profile
         result = await volunteerAPI.create({
-          ...saveData,
           userId: volunteer.id,
+          ...volunteerProfileUpdateData,
         });
       }
 
       if (result.success) {
+        // Pass the updated user data including profile back to parent
         onSave(result.data);
         onClose();
       } else {
-        alert("Failed to save volunteer: " + result.message);
+        alert("Failed to save volunteer profile: " + result.message);
       }
     } catch (error) {
       console.error("Error saving volunteer:", error);
@@ -315,11 +419,48 @@ const EditVolunteerDialog = ({ open, volunteer, onClose, onSave }) => {
     }
   };
 
+  const profileButtonText = formData.image
+    ? "Change Profile Picture"
+    : "Upload Profile Picture";
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>Edit Volunteer Profile</DialogTitle>
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
+          {/* Profile Picture Section */}
+          <Grid
+            size={{ xs: 12 }}
+            sx={{ display: "flex", alignItems: "center", mb: 2 }}
+          >
+            {formData.image ? (
+              <Avatar
+                src={formData.image}
+                alt="Profile"
+                sx={{ width: 120, height: 120, mr: 3 }}
+              />
+            ) : (
+              <Avatar
+                sx={{
+                  width: 120,
+                  height: 120,
+                  mr: 3,
+                  bgcolor: "primary.main",
+                  fontSize: "3rem",
+                }}
+              >
+                {getInitials(formData.name || volunteer?.name)}
+              </Avatar>
+            )}
+            <ProfilePictureUpload
+              onUploadComplete={handleImageUploadComplete}
+              onError={(msg) => alert(msg)}
+              buttonText={profileButtonText}
+              disabled={loading || loadingData}
+              resetTrigger={imageUploadResetTrigger}
+            />
+          </Grid>
+
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               label="Name"
@@ -331,11 +472,14 @@ const EditVolunteerDialog = ({ open, volunteer, onClose, onSave }) => {
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
-              label="Age"
-              type="number"
+              label="Date of Birth"
+              type="date"
               fullWidth
-              value={formData.age}
-              onChange={(e) => handleInputChange("age", e.target.value)}
+              value={formData.dateOfBirth}
+              onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
+              InputLabelProps={{
+                shrink: true,
+              }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -569,7 +713,6 @@ const AssignedStudentsDialog = ({ open, onClose, students }) => {
 };
 
 const VolunteerInfo = ({ volunteer, onClose }) => {
-
   if (!volunteer) return null;
 
   const profile = volunteer.profile;
@@ -579,6 +722,20 @@ const VolunteerInfo = ({ volunteer, onClose }) => {
     navigator.clipboard.writeText(volunteerData);
     alert("Volunteer data copied to clipboard");
   };
+
+  const getInitials = (name) => {
+    if (!name) return "";
+    const nameParts = name.split(" ");
+    if (nameParts.length > 1) {
+      return (
+        nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
+      ).toUpperCase();
+    }
+    return nameParts[0].charAt(0).toUpperCase();
+  };
+
+  const volunteerName = profile?.name || volunteer.name || volunteer.email;
+  const initials = getInitials(volunteerName);
 
   return (
     <>
@@ -601,13 +758,18 @@ const VolunteerInfo = ({ volunteer, onClose }) => {
         </div>
 
         <div className="flex items-center justify-center w-full mb-12">
-          <div className="w-32 h-32 bg-gray-300 rounded-full flex-shrink-0 mr-4">
-            <img
-              src={volunteer.image || "/api/placeholder/64/64"}
-              alt={profile?.name || volunteer.name || volunteer.email}
-              className="w-32 h-32 rounded-full object-cover"
-            />
-          </div>
+          <Avatar
+            src={volunteer.image || undefined}
+            alt={volunteerName}
+            sx={{
+              width: 128,
+              height: 128,
+              fontSize: "2rem",
+              bgcolor: volunteer.image ? undefined : "primary.main",
+            }}
+          >
+            {!volunteer.image && initials}
+          </Avatar>
         </div>
 
         <div className="space-y-2 text-xs">
@@ -771,6 +933,8 @@ const VolunteersPage = () => {
     if (selectedVolunteer && selectedVolunteer.id === updatedVolunteer.userId) {
       setSelectedVolunteer({ ...selectedVolunteer, profile: updatedVolunteer });
     }
+
+    fetchVolunteers(currentPage); // Refresh volunteers list
   };
 
   const handleVolunteerDelete = (deletedId) => {
@@ -828,7 +992,7 @@ const VolunteersPage = () => {
                 <div>Programmes Enrolled</div>
                 <div>Organisation</div>
                 <div>Feedback</div>
-                { (role === "expert" || role ==="admin") &&  <div>Actions</div> }
+                {(role === "expert" || role === "admin") && <div>Actions</div>}
               </div>
             </div>
 

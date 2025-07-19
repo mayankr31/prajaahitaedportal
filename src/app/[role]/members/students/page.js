@@ -12,6 +12,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Avatar,
+  Box,
 } from "@mui/material";
 import { Grid } from "@mui/material";
 import React, { useState, useEffect } from "react";
@@ -25,6 +27,8 @@ import {
   volunteerAPI,
 } from "@/lib/api";
 import { useParams } from "next/navigation";
+import ImageUpload from "@/app/components/ImageUpload";
+import ProfilePictureUpload from "@/app/components/ProfilePictureUpload";
 
 const StudentCard = ({
   student,
@@ -193,7 +197,6 @@ const StudentCard = ({
 const EditStudentDialog = ({ open, student, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     name: "",
-    age: "",
     email: "",
     skills: "",
     areaOfInterest: "",
@@ -209,6 +212,8 @@ const EditStudentDialog = ({ open, student, onClose, onSave }) => {
     volunteerAssignedId: "",
     programmeEnrolledId: "",
     organisationId: "",
+    dateOfBirth: "",
+    image: "", // Added for profile picture URL
   });
 
   const [loading, setLoading] = useState(false);
@@ -216,8 +221,7 @@ const EditStudentDialog = ({ open, student, onClose, onSave }) => {
   const [organisations, setOrganisations] = useState([]);
   const [volunteers, setVolunteers] = useState([]);
   const [dropdownsLoading, setDropdownsLoading] = useState(false);
-
-  // console.log("EditStudentDialog - student:", student);
+  const [imageUploadResetTrigger, setImageUploadResetTrigger] = useState(0);
 
   // Fetch dropdown data
   useEffect(() => {
@@ -231,11 +235,7 @@ const EditStudentDialog = ({ open, student, onClose, onSave }) => {
             volunteerAPI.getAll(),
           ]);
 
-        // if (programmesRes.success) {
-        //   setProgrammes(programmesRes.data || []);
-        // }
         if (programmesRes.success) {
-          // Filter approved programs
           const approvedProgrammes = programmesRes.data.filter(
             (programme) => programme.approvalStatus === "APPROVED"
           );
@@ -259,12 +259,12 @@ const EditStudentDialog = ({ open, student, onClose, onSave }) => {
     }
   }, [open]);
 
+  // Effect to populate form data when student prop changes
   useEffect(() => {
-    if (student) {
+    if (open && student) {
       const profile = student.profile;
       setFormData({
         name: profile?.name || student.name || "",
-        age: profile?.age || student.age || "",
         email: profile?.email || student.email || "",
         skills: profile?.skills || "",
         areaOfInterest: profile?.areaOfInterest || "",
@@ -280,15 +280,63 @@ const EditStudentDialog = ({ open, student, onClose, onSave }) => {
         volunteerAssignedId: profile?.volunteerAssignedId || "",
         programmeEnrolledId: profile?.programmeEnrolledId || "",
         organisationId: profile?.organisationId || "",
+        dateOfBirth: student.dateOfBirth
+          ? new Date(student.dateOfBirth).toISOString().split("T")[0]
+          : "",
+        image: student.image || "", // Populate image from student object
       });
+      setImageUploadResetTrigger(prev => prev + 1); // Reset image upload component
     }
-  }, [student]);
+  }, [open, student]);
+
+  // Effect to calculate age when dateOfBirth changes
+  useEffect(() => {
+    if (formData.dateOfBirth) {
+      const birthDate = new Date(formData.dateOfBirth);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDifference = today.getMonth() - birthDate.getMonth();
+      if (
+        monthDifference < 0 ||
+        (monthDifference === 0 && today.getDate() < birthDate.getDate())
+      ) {
+        age--;
+      }
+      setFormData((prev) => ({
+        ...prev,
+        age: age.toString(),
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        age: "",
+      }));
+    }
+  }, [formData.dateOfBirth]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleImageUploadComplete = (path) => {
+    setFormData((prev) => ({
+      ...prev,
+      image: path,
+    }));
+  };
+
+  const getInitials = (name) => {
+    if (!name) return "";
+    const nameParts = name.split(" ");
+    if (nameParts.length > 1) {
+      return (
+        nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
+      ).toUpperCase();
+    }
+    return nameParts[0].charAt(0).toUpperCase();
   };
 
   const handleSave = async () => {
@@ -298,18 +346,57 @@ const EditStudentDialog = ({ open, student, onClose, onSave }) => {
     try {
       let result;
 
+      const dataToSave = {
+        ...formData,
+        age: formData.age ? parseInt(formData.age) : null,
+        dateOfBirth: formData.dateOfBirth || null,
+      };
+
+      const userUpdateData = {
+        name: dataToSave.name,
+        email: dataToSave.email,
+        age: dataToSave.age,
+        dateOfBirth: dataToSave.dateOfBirth,
+        image: dataToSave.image, // Include image in user update data
+      };
+
+      const studentProfileUpdateData = {
+        name: dataToSave.name,
+        email: dataToSave.email,
+        skills: dataToSave.skills,
+        areaOfInterest: dataToSave.areaOfInterest,
+        readingCapacity: dataToSave.readingCapacity,
+        preferredLanguages: dataToSave.preferredLanguages,
+        fineMotorDevelopment: dataToSave.fineMotorDevelopment,
+        interactionCapacity: dataToSave.interactionCapacity,
+        onlineClassExperience: dataToSave.onlineClassExperience,
+        attentionSpan: dataToSave.attentionSpan,
+        triggeringFactors: dataToSave.triggeringFactors,
+        happyMoments: dataToSave.happyMoments,
+        disability: dataToSave.disability,
+        volunteerAssignedId: dataToSave.volunteerAssignedId,
+        programmeEnrolledId: dataToSave.programmeEnrolledId,
+        organisationId: dataToSave.organisationId,
+        age: dataToSave.age,
+      };
+
+      const userUpdateResult = await userAPI.update(student.id, userUpdateData);
+
+      if (!userUpdateResult.success) {
+        alert("Failed to update user basic info: " + userUpdateResult.message);
+        setLoading(false);
+        return;
+      }
+
       if (student.profile) {
-        // Update existing student profile
-        result = await studentAPI.update(student.profile.id, {
-          ...formData,
-          age: formData.age ? parseInt(formData.age) : null,
-        });
+        result = await studentAPI.update(
+          student.profile.id,
+          studentProfileUpdateData
+        );
       } else {
-        // Create new student profile
         result = await studentAPI.create({
-          ...formData,
           userId: student.id,
-          age: formData.age ? parseInt(formData.age) : null,
+          ...studentProfileUpdateData,
         });
       }
 
@@ -317,7 +404,7 @@ const EditStudentDialog = ({ open, student, onClose, onSave }) => {
         onSave(result.data);
         onClose();
       } else {
-        alert("Failed to save student: " + result.message);
+        alert("Failed to save student profile: " + result.message);
       }
     } catch (error) {
       console.error("Error saving student:", error);
@@ -326,12 +413,36 @@ const EditStudentDialog = ({ open, student, onClose, onSave }) => {
       setLoading(false);
     }
   };
+  
+  const profileButtonText = formData.image ? "Change Profile Picture" : "Upload Profile Picture";
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>Edit Student Profile</DialogTitle>
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
+          {/* Profile Picture Section */}
+          <Grid size={{ xs: 12 }} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            {formData.image ? (
+              <Avatar
+                src={formData.image}
+                alt="Profile"
+                sx={{ width: 120, height: 120, mr: 3 }}
+              />
+            ) : (
+              <Avatar sx={{ width: 120, height: 120, mr: 3, bgcolor: 'primary.main', fontSize: '3rem' }}>
+                {getInitials(formData.name || student?.name)}
+              </Avatar>
+            )}
+            <ProfilePictureUpload
+              onUploadComplete={handleImageUploadComplete}
+              onError={(msg) => alert(msg)}
+              buttonText={profileButtonText}
+              disabled={loading || dropdownsLoading}
+              resetTrigger={imageUploadResetTrigger}
+            />
+          </Grid>
+
           {/* Basic Information */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
@@ -344,11 +455,14 @@ const EditStudentDialog = ({ open, student, onClose, onSave }) => {
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
-              label="Age"
-              type="number"
+              label="Date of Birth"
+              type="date"
               fullWidth
-              value={formData.age}
-              onChange={(e) => handleInputChange("age", e.target.value)}
+              value={formData.dateOfBirth}
+              onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
+              InputLabelProps={{
+                shrink: true,
+              }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -557,7 +671,6 @@ const EditStudentDialog = ({ open, student, onClose, onSave }) => {
     </Dialog>
   );
 };
-
 const StudentInfo = ({ student, onClose, onDelete }) => {
   if (!student) return null;
 
@@ -588,6 +701,20 @@ const StudentInfo = ({ student, onClose, onDelete }) => {
     alert("Student data copied to clipboard");
   };
 
+  const getInitials = (name) => {
+    if (!name) return "";
+    const nameParts = name.split(" ");
+    if (nameParts.length > 1) {
+      return (
+        nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
+      ).toUpperCase();
+    }
+    return nameParts[0].charAt(0).toUpperCase();
+  };
+
+  const studentName = profile?.name || student.name || student.email;
+  const initials = getInitials(studentName);
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 h-fit">
       <div className="flex justify-end items-start mb-12">
@@ -614,13 +741,18 @@ const StudentInfo = ({ student, onClose, onDelete }) => {
       </div>
 
       <div className="flex items-center justify-center w-full mb-12">
-        <div className="w-32 h-32 bg-gray-300 rounded-full flex-shrink-0 mr-4">
-          <img
-            src={student.image || "/api/placeholder/64/64"}
-            alt={profile?.name || student.name || student.email}
-            className="w-32 h-32 rounded-full object-cover"
-          />
-        </div>
+        <Avatar
+          src={student.image || undefined}
+          alt={studentName}
+          sx={{ 
+            width: 128, 
+            height: 128,
+            fontSize: '2rem',
+            bgcolor: student.image ? undefined : 'primary.main'
+          }}
+        >
+          {!student.image && initials}
+        </Avatar>
       </div>
 
       <div className="space-y-2 text-xs">
@@ -845,6 +977,8 @@ const StudentsPage = () => {
     if (selectedStudent && selectedStudent.id === updatedStudent.userId) {
       setSelectedStudent({ ...selectedStudent, profile: updatedStudent });
     }
+
+    fetchStudents();
   };
 
   const handleStudentDelete = (deletedId) => {

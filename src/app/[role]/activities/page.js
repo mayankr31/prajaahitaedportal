@@ -1,7 +1,7 @@
-// //src\app\[role]\activities\page.js
+// // src/app/[role]/activities/page.js
 // "use client";
 // import React, { useState, useEffect, useMemo } from "react";
-// import { Plus, ChevronRight, MessageSquare, Download } from "lucide-react"; // Import Download icon
+// import { Plus, ChevronRight, MessageSquare, Download } from "lucide-react";
 // import { useRouter, useParams } from "next/navigation";
 // import {
 //   Dialog,
@@ -24,6 +24,7 @@
 // import { activityAPI } from "@/lib/api";
 // import ImageUpload from "@/app/components/ImageUpload";
 // import PdfUpload from "@/app/components/PDFUpload";
+// import ApprovalActivitiesDialog from "./ApprovalActivitiesDialog"; // Import the new dialog
 
 // // --- Helper function to format time ---
 // const formatTime12Hour = (time24) => {
@@ -45,7 +46,11 @@
 
 //   const [activities, setActivities] = useState([]);
 //   const [loading, setLoading] = useState(true);
-//   const [selectedCategory, setSelectedCategory] = useState("All"); // State for filtering
+//   const [selectedCategory, setSelectedCategory] = useState("All");
+
+//   // Approval Dialog States
+//   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
+//   const [pendingActivities, setPendingActivities] = useState([]);
 
 //   // (All other state variables remain the same)
 //   const [dialogOpen, setDialogOpen] = useState(false);
@@ -70,12 +75,12 @@
 
 //   useEffect(() => {
 //     loadActivities();
-//   }, []);
+//   }, [role]); // Reload activities when role changes
 
 //   const loadActivities = async () => {
 //     try {
 //       setLoading(true);
-//       const response = await activityAPI.getAll();
+//       const response = await activityAPI.getAll(); // This will now fetch based on role internally
 //       if (response.success) {
 //         const sortedActivities = response.data.sort((a, b) => {
 //           const dateTimeA = new Date(`${a.date.split("T")[0]}T${a.time || "00:00"}`);
@@ -83,6 +88,15 @@
 //           return dateTimeB - dateTimeA;
 //         });
 //         setActivities(sortedActivities);
+
+//         // Separate pending activities for admin/expert view
+//         if (role === "admin" || role === "expert") {
+//           setPendingActivities(sortedActivities.filter(act => act.approvalStatus === "PENDING"));
+//         } else {
+//           setPendingActivities([]); // Clear pending activities for other roles
+//         }
+//       } else {
+//         setError(response.error || "Failed to load activities.");
 //       }
 //     } catch (error) {
 //       console.error("Error loading activities:", error);
@@ -92,15 +106,23 @@
 //     }
 //   };
 
-//   // --- Filter activities based on selectedCategory ---
+//   // --- Filter activities based on selectedCategory and user role ---
 //   const filteredActivities = useMemo(() => {
-//     if (selectedCategory === "All") {
-//       return activities;
-//     }
-//     return activities.filter(activity => activity.category === selectedCategory);
-//   }, [activities, selectedCategory]);
+//     let currentActivities = activities;
 
-//   // (All other handler functions like handleDialogOpen, handleSubmit, etc. remain the same)
+//     // For admin/expert, they see all activities, but the 'All Activities' section only shows approved ones normally
+//     // Pending ones are handled in the approval dialog.
+//     if (role === "admin" || role === "expert") {
+//       currentActivities = activities.filter(activity => activity.approvalStatus === "APPROVED");
+//     }
+
+//     if (selectedCategory === "All") {
+//       return currentActivities;
+//     }
+//     return currentActivities.filter(activity => activity.category === selectedCategory);
+//   }, [activities, selectedCategory, role]);
+
+
 //   const handleDialogOpen = () => setDialogOpen(true);
 
 //   const handleDialogClose = () => {
@@ -133,13 +155,17 @@
 //       setError("Activity title is required.");
 //       return;
 //     }
+//     if (!formData.category) {
+//       setError("Activity category is required.");
+//       return;
+//     }
 //     setSubmitting(true);
 //     setError("");
 //     try {
 //       const activityData = {
 //         title: formData.title.trim(),
-//         imageUrl: uploadedImagePath || formData.imageUrl.trim() || "https://techterms.com/img/lg/pdf_109.png", // Changed to null to explicitly check later
-//         pdfUrl: uploadedPdfPath || formData.pdfUrl.trim() || "", // Changed to null
+//         imageUrl: uploadedImagePath || "https://techterms.com/img/lg/pdf_109.png", // Default image if none uploaded
+//         pdfUrl: uploadedPdfPath || null,
 //         date: new Date(formData.date).toISOString(),
 //         time: formData.time,
 //         category: formData.category,
@@ -188,6 +214,19 @@
 //     }
 //   };
 
+//   // Approval Dialog Handlers
+//   const handleApprovalDialogOpen = () => setApprovalDialogOpen(true);
+//   const handleApprovalDialogClose = () => {
+//     setApprovalDialogOpen(false);
+//     loadActivities(); // Reload activities after closing approval dialog
+//   };
+//   const handleApprovalStatusChange = () => {
+//     // This function is passed to the ApprovalGroupsDialog
+//     // and is called when an approval/rejection action is completed.
+//     // It triggers a reload of groups to update the UI.
+//     loadActivities();
+//   };
+
 //   const ActivityCard = ({ activity }) => {
 //     const displayImageUrl = activity.imageUrl
 //       ? activity.imageUrl
@@ -222,15 +261,23 @@
 //               sx={{ position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
 //             />
 //           )}
+//           {/* Display Approval Status Chip for pending/rejected by volunteers */}
+//           {role === "volunteer" && (activity.approvalStatus === "PENDING" || activity.approvalStatus === "REJECTED") && (
+//             <Chip
+//               label={activity.approvalStatus}
+//               size="small"
+//               color={activity.approvalStatus === "PENDING" ? "warning" : "error"}
+//               sx={{ position: 'absolute', bottom: 8, left: 8 }}
+//             />
+//           )}
 //         </div>
 //         <div className="p-4 text-center w-56">
 //           <h3 className="font-semibold text-gray-800">{activity.title}</h3>
 //           <p className="text-sm text-gray-500">
 //             {new Date(activity.date).toLocaleDateString()} at{" "}
-//             {/* Use the new time formatting function */}
 //             <strong>{formatTime12Hour(activity.time)}</strong>
 //           </p>
-//           {activity.pdfUrl && ( // Conditionally render download button
+//           {activity.pdfUrl && (
 //             <Button
 //               size="small"
 //               startIcon={<Download size={16} />}
@@ -250,6 +297,12 @@
 //               {activity.feedback ? "Edit Feedback" : "Add Feedback"}
 //             </Button>
 //           )}
+//           {/* Display Rejection Message if exists and user is volunteer */}
+//           {role === "volunteer" && activity.approvalStatus === "REJECTED" && activity.rejectionMessage && (
+//             <Alert severity="error" sx={{ mt: 1, p: 1 }}>
+//               Rejected: {activity.rejectionMessage}
+//             </Alert>
+//           )}
 //         </div>
 //       </div>
 //     );
@@ -267,15 +320,27 @@
 //           <h1 className="font-bold text-gray-800">All Activities</h1>
 //           <ChevronRight className="text-gray-800" size={20} />
 //         </div>
-//         {(role === "volunteer" || role === "expert" || role === "admin") && (
-//           <button
-//             onClick={handleDialogOpen}
-//             className="flex items-center text-sm space-x-2 bg-[#2F699A] text-white px-4 py-2 rounded-lg hover:bg-[#25547b] transition-colors"
-//           >
-//             <Plus size={18} />
-//             <span>Add Activity</span>
-//           </button>
-//         )}
+//         <div className="flex items-center space-x-4"> {/* Container for buttons */}
+//           {(role === "admin" || role === "expert") && pendingActivities.length > 0 && (
+//             <Button
+//               onClick={handleApprovalDialogOpen}
+//               variant="outlined"
+//               color="primary"
+//               sx={{ textTransform: 'none' }}
+//             >
+//               Review Activities for Approval ({pendingActivities.length})
+//             </Button>
+//           )}
+//           {(role === "volunteer" || role === "expert" || role === "admin") && (
+//             <button
+//               onClick={handleDialogOpen}
+//               className="flex items-center text-sm space-x-2 bg-[#2F699A] text-white px-4 py-2 rounded-lg hover:bg-[#25547b] transition-colors"
+//             >
+//               <Plus size={18} />
+//               <span>Add Activity</span>
+//             </button>
+//           )}
+//         </div>
 //       </div>
 
 //       {/* --- Category Filter Chips --- */}
@@ -315,7 +380,7 @@
 //         </div>
 //       </div>
 
-//       {/* (Dialogs for "Add Activity" and "Feedback" remain unchanged) */}
+//       {/* Add Activity Dialog */}
 //       <Dialog open={dialogOpen} onClose={handleDialogClose} maxWidth="sm" fullWidth>
 //         <DialogTitle>Add New Activity</DialogTitle>
 //         <form onSubmit={handleSubmit}>
@@ -323,11 +388,13 @@
 //             <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: 1 }}>
 //               {error && <Alert severity="error">{error}</Alert>}
 //               <TextField name="title" label="Activity Title" value={formData.title} onChange={handleInputChange} fullWidth required />
-//               <FormControl fullWidth>
+//               <FormControl fullWidth required> {/* Added required to FormControl */}
 //                 <InputLabel id="category-select-label">Category</InputLabel>
 //                 <Select labelId="category-select-label" name="category" value={formData.category} label="Category" onChange={handleInputChange}>
+//                   <MenuItem value=""><em>None</em></MenuItem> {/* Added a "None" option */}
 //                   <MenuItem value="Sports">Sports</MenuItem>
 //                   <MenuItem value="IT">IT</MenuItem>
+//                   {/* Add more categories as needed */}
 //                 </Select>
 //               </FormControl>
 //               <Box sx={{ display: 'flex', gap: 2 }}>
@@ -346,6 +413,8 @@
 //           </DialogActions>
 //         </form>
 //       </Dialog>
+
+//       {/* Feedback Dialog */}
 //       <Dialog open={feedbackDialogOpen} onClose={handleCloseFeedbackDialog} maxWidth="sm" fullWidth>
 //         <DialogTitle>Feedback for {currentActivity?.title}</DialogTitle>
 //         <DialogContent>
@@ -358,6 +427,14 @@
 //           </Button>
 //         </DialogActions>
 //       </Dialog>
+
+//       {/* Approval Activities Dialog (NEW) */}
+//       <ApprovalActivitiesDialog
+//         open={approvalDialogOpen}
+//         onClose={handleApprovalDialogClose}
+//         pendingActivities={pendingActivities}
+//         onApprovalStatusChange={handleApprovalStatusChange}
+//       />
 //     </div>
 //   );
 // };
@@ -386,11 +463,15 @@ import {
   Select,
   Chip,
   Stack,
+  Tooltip,
+  IconButton,
 } from "@mui/material";
 import { activityAPI } from "@/lib/api";
 import ImageUpload from "@/app/components/ImageUpload";
 import PdfUpload from "@/app/components/PDFUpload";
 import ApprovalActivitiesDialog from "./ApprovalActivitiesDialog"; // Import the new dialog
+import { useSession } from "next-auth/react";
+import { Info } from "@mui/icons-material";
 
 // --- Helper function to format time ---
 const formatTime12Hour = (time24) => {
@@ -409,6 +490,7 @@ const Activities = () => {
   const router = useRouter();
   const params = useParams();
   const role = params.role;
+  const { data: session, status } = useSession();
 
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -440,8 +522,9 @@ const Activities = () => {
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
 
   useEffect(() => {
+    if (status === "loading") return; // Don't fetch if session is still loading
     loadActivities();
-  }, [role]); // Reload activities when role changes
+  }, [role, status]); // Reload activities when role or session status changes
 
   const loadActivities = async () => {
     try {
@@ -453,13 +536,30 @@ const Activities = () => {
           const dateTimeB = new Date(`${b.date.split("T")[0]}T${b.time || "00:00"}`);
           return dateTimeB - dateTimeA;
         });
-        setActivities(sortedActivities);
-
-        // Separate pending activities for admin/expert view
-        if (role === "admin" || role === "expert") {
+        
+        // Handle activities based on role similar to groups
+        if (session?.user?.role === "admin" || session?.user?.role === "expert") {
+          setActivities(sortedActivities); // Admins/Experts see all activities
           setPendingActivities(sortedActivities.filter(act => act.approvalStatus === "PENDING"));
+        } else if (session?.user?.role === "volunteer") {
+          // Volunteers see their created activities (any status) and approved activities
+          const filteredActivities = sortedActivities.filter(
+            (activity) =>
+              activity.createdById === session.user.id ||
+              activity.approvalStatus === "APPROVED"
+          );
+          setActivities(filteredActivities);
+          setPendingActivities(sortedActivities.filter(act => act.approvalStatus === "PENDING"));
+        } else if (session?.user?.role === "student") {
+          // Students only see approved activities
+          const approvedActivities = sortedActivities.filter(
+            (activity) => activity.approvalStatus === "APPROVED"
+          );
+          setActivities(approvedActivities);
+          setPendingActivities([]);
         } else {
-          setPendingActivities([]); // Clear pending activities for other roles
+          setActivities([]);
+          setPendingActivities([]);
         }
       } else {
         setError(response.error || "Failed to load activities.");
@@ -473,21 +573,43 @@ const Activities = () => {
   };
 
   // --- Filter activities based on selectedCategory and user role ---
-  const filteredActivities = useMemo(() => {
-    let currentActivities = activities;
-
-    // For admin/expert, they see all activities, but the 'All Activities' section only shows approved ones normally
-    // Pending ones are handled in the approval dialog.
-    if (role === "admin" || role === "expert") {
-      currentActivities = activities.filter(activity => activity.approvalStatus === "APPROVED");
+  const getFilteredActivities = () => {
+    if (session?.user?.role === "student") {
+      return activities.filter((activity) => activity.approvalStatus === "APPROVED");
     }
+    // Volunteers see their own pending/rejected/approved activities and all approved activities
+    if (session?.user?.role === "volunteer") {
+      return activities.filter(
+        (activity) =>
+          activity.createdById === session.user.id ||
+          activity.approvalStatus === "APPROVED"
+      );
+    }
+    // Admins and Experts see all activities
+    return activities;
+  };
 
+  const filteredActivities = useMemo(() => {
+    const currentActivities = getFilteredActivities();
+    
     if (selectedCategory === "All") {
       return currentActivities;
     }
     return currentActivities.filter(activity => activity.category === selectedCategory);
-  }, [activities, selectedCategory, role]);
+  }, [activities, selectedCategory, role, session]);
 
+  // Separate activities into approved and pending/rejected
+  const approvedActivities = filteredActivities.filter(
+    (activity) => activity.approvalStatus === "APPROVED"
+  );
+  const pendingRejectedActivities = filteredActivities.filter(
+    (activity) =>
+      activity.approvalStatus === "PENDING" || activity.approvalStatus === "REJECTED"
+  );
+
+  const pendingActivitiesCount = activities.filter(
+    (activity) => activity.approvalStatus === "PENDING"
+  ).length;
 
   const handleDialogOpen = () => setDialogOpen(true);
 
@@ -587,9 +709,9 @@ const Activities = () => {
     loadActivities(); // Reload activities after closing approval dialog
   };
   const handleApprovalStatusChange = () => {
-    // This function is passed to the ApprovalGroupsDialog
+    // This function is passed to the ApprovalActivitiesDialog
     // and is called when an approval/rejection action is completed.
-    // It triggers a reload of groups to update the UI.
+    // It triggers a reload of activities to update the UI.
     loadActivities();
   };
 
@@ -607,12 +729,47 @@ const Activities = () => {
       }
     };
 
+    const handleCardClick = () => {
+      if (activity.approvalStatus === "APPROVED") {
+        router.push(`/${role}/activities/${activity.id}/prerequisites`);
+      }
+    };
+
     return (
       <div className="flex flex-col items-center flex-shrink-0">
         <div
           className="bg-white rounded-xl h-56 w-56 relative shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer group"
-          onClick={() => router.push(`/${role}/activities/${activity.id}/prerequisites`)}
+          onClick={handleCardClick}
         >
+          {/* Approval Status Overlay */}
+          {session?.user?.role !== "student" && activity.approvalStatus !== "APPROVED" && (
+            <div
+              className={`absolute top-2 left-2 px-2 py-1 rounded-md text-xs font-bold z-10
+                ${activity.approvalStatus === "PENDING"
+                  ? "bg-yellow-500 text-white"
+                  : "bg-red-500 text-white"
+                }`}
+            >
+              {activity.approvalStatus}
+            </div>
+          )}
+
+          {/* Rejection Message Tooltip for Volunteers */}
+          {activity.approvalStatus === "REJECTED" &&
+            session?.user?.role === "volunteer" &&
+            activity.createdById === session.user.id &&
+            activity.rejectionMessage && (
+              <Tooltip title={`Reason: ${activity.rejectionMessage}`} arrow>
+                <IconButton
+                  size="small"
+                  className="absolute top-0 left-47 text-white bg-gray-800 bg-opacity-50 hover:bg-opacity-70 z-10"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Info size={18} className="text-red-500" />
+                </IconButton>
+              </Tooltip>
+            )}
+
           <img
             src={displayImageUrl}
             alt={activity.title}
@@ -624,16 +781,7 @@ const Activities = () => {
               label={activity.category}
               size="small"
               color="primary"
-              sx={{ position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
-            />
-          )}
-          {/* Display Approval Status Chip for pending/rejected by volunteers */}
-          {role === "volunteer" && (activity.approvalStatus === "PENDING" || activity.approvalStatus === "REJECTED") && (
-            <Chip
-              label={activity.approvalStatus}
-              size="small"
-              color={activity.approvalStatus === "PENDING" ? "warning" : "error"}
-              sx={{ position: 'absolute', bottom: 8, left: 8 }}
+              sx={{ position: 'absolute', bottom: 8, right: 8, backgroundColor: 'rgba(0, 0, 0, 0.6)', color: 'white' }}
             />
           )}
         </div>
@@ -643,6 +791,14 @@ const Activities = () => {
             {new Date(activity.date).toLocaleDateString()} at{" "}
             <strong>{formatTime12Hour(activity.time)}</strong>
           </p>
+          {/* Display created by info for volunteers (their own pending/rejected) */}
+          {session?.user?.role === "volunteer" &&
+            activity.createdById === session.user.id &&
+            activity.approvalStatus !== "APPROVED" && (
+              <p className="text-xs text-gray-500 mt-1">
+                Created by: {activity.createdBy?.name || "You"}
+              </p>
+            )}
           {activity.pdfUrl && (
             <Button
               size="small"
@@ -653,7 +809,7 @@ const Activities = () => {
               Download PDF
             </Button>
           )}
-          {(role === "volunteer" || role === "expert") && (
+          {(role === "volunteer" || role === "expert") && activity.approvalStatus === "APPROVED" && (
             <Button
               size="small"
               startIcon={<MessageSquare size={16} />}
@@ -663,19 +819,17 @@ const Activities = () => {
               {activity.feedback ? "Edit Feedback" : "Add Feedback"}
             </Button>
           )}
-          {/* Display Rejection Message if exists and user is volunteer */}
-          {role === "volunteer" && activity.approvalStatus === "REJECTED" && activity.rejectionMessage && (
-            <Alert severity="error" sx={{ mt: 1, p: 1 }}>
-              Rejected: {activity.rejectionMessage}
-            </Alert>
-          )}
         </div>
       </div>
     );
   };
 
-  if (loading) {
-    return (<div className="flex justify-center items-center min-h-screen"><CircularProgress /></div>);
+  if (loading || status === "loading") {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <CircularProgress />
+      </div>
+    );
   }
 
   return (
@@ -687,16 +841,6 @@ const Activities = () => {
           <ChevronRight className="text-gray-800" size={20} />
         </div>
         <div className="flex items-center space-x-4"> {/* Container for buttons */}
-          {(role === "admin" || role === "expert") && pendingActivities.length > 0 && (
-            <Button
-              onClick={handleApprovalDialogOpen}
-              variant="outlined"
-              color="primary"
-              sx={{ textTransform: 'none' }}
-            >
-              Review Activities for Approval ({pendingActivities.length})
-            </Button>
-          )}
           {(role === "volunteer" || role === "expert" || role === "admin") && (
             <button
               onClick={handleDialogOpen}
@@ -706,8 +850,29 @@ const Activities = () => {
               <span>Add Activity</span>
             </button>
           )}
+          
+          {(session?.user?.role === "admin" || session?.user?.role === "expert") && (
+            <button
+              onClick={handleApprovalDialogOpen}
+              className="flex items-center text-sm space-x-2 bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors relative"
+            >
+              <span>Approval Activities</span>
+              {pendingActivitiesCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {pendingActivitiesCount}
+                </span>
+              )}
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
+        </div>
+      )}
 
       {/* --- Category Filter Chips --- */}
       <Stack direction="row" spacing={1} sx={{ mb: 4 }}>
@@ -731,20 +896,38 @@ const Activities = () => {
         />
       </Stack>
 
-      {/* All Activities Section */}
-      <div>
-        <div className="flex gap-8 overflow-x-auto pb-4">
-          {filteredActivities.length > 0 ? (
-            filteredActivities.map((activity) => (
+      {/* Approved Activities Section */}
+      {approvedActivities.length > 0 && (
+        <div className="mb-12">
+          <div className="flex gap-8 overflow-x-auto pb-4">
+            {approvedActivities.map((activity) => (
               <ActivityCard key={activity.id} activity={activity} />
-            ))
-          ) : (
-            <Typography variant="body2" color="textSecondary" sx={{ pl: 1 }}>
-              No activities found for the selected category.
-            </Typography>
-          )}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Pending/Rejected Activities Section */}
+      {pendingRejectedActivities.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center space-x-0 mb-6">
+            <h1 className="font-bold text-gray-800">Pending / Rejected Activities</h1>
+            <ChevronRight className="text-gray-800" size={20} />
+          </div>
+          <div className="flex gap-8 overflow-x-auto pb-4">
+            {pendingRejectedActivities.map((activity) => (
+              <ActivityCard key={activity.id} activity={activity} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* No Activities Message */}
+      {approvedActivities.length === 0 && pendingRejectedActivities.length === 0 && !loading && (
+        <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center', mt: 4 }}>
+          No activities found for the selected category.
+        </Typography>
+      )}
 
       {/* Add Activity Dialog */}
       <Dialog open={dialogOpen} onClose={handleDialogClose} maxWidth="sm" fullWidth>
@@ -794,7 +977,7 @@ const Activities = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Approval Activities Dialog (NEW) */}
+      {/* Approval Activities Dialog */}
       <ApprovalActivitiesDialog
         open={approvalDialogOpen}
         onClose={handleApprovalDialogClose}

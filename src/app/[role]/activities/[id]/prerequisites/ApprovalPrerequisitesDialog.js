@@ -120,7 +120,7 @@ export default function ApprovalPrerequisitesDialog({ open, onClose, pendingPrer
                 {pendingPrerequisites.map((prerequisite) => (
                   <ListItem
                     key={prerequisite.id}
-                    button
+                    button='true'
                     onClick={() => handlePrerequisiteSelect(prerequisite)}
                     selected={selectedPrerequisite?.id === prerequisite.id}
                     sx={{ mb: 1, borderRadius: '8px', '&.Mui-selected': { backgroundColor: '#e0f2f7' } }}

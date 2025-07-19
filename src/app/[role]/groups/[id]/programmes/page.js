@@ -1,4 +1,3 @@
-// //src/app/[role]/groups/[id]/programmes/page.js
 // "use client";
 
 // import React, { useState, useEffect } from "react";
@@ -17,11 +16,13 @@
 //   CircularProgress,
 //   Alert,
 //   IconButton,
+//   Chip // Import Chip for status display
 // } from "@mui/material";
 // import Grid from "@mui/material/Grid";
 // import CloseIcon from "@mui/icons-material/Close";
-// import { programmeAPI } from "@/lib/api";
-// import ImageUpload from "@/app/components/ImageUpload"; // Adjust path as needed
+// import { programmeAPI } from "@/lib/api"; // Ensure programmeAPI is configured
+// import ImageUpload from "@/app/components/ImageUpload";
+// import ApprovalProgrammesDialog from "./ApprovalProgrammesDialog"; // New: Import the approval dialog
 
 // const Programmes = () => {
 //   const params = useParams();
@@ -44,90 +45,38 @@
 //     imageUrl: "",
 //   });
 
-//   // Static data as fallback (you can remove this once API is working)
-//   const staticProgrammesData = [
-//     {
-//       id: 1,
-//       name: "Creative Arts Program",
-//       totalMembers: 220,
-//       students: 150,
-//       volunteers: 50,
-//       specialEducators: 20,
-//       image: "/api/placeholder/300/200",
-//       color: "bg-blue-100",
-//     },
-//     {
-//       id: 2,
-//       name: "Arts & Crafts Workshop",
-//       totalMembers: 220,
-//       students: 150,
-//       volunteers: 50,
-//       specialEducators: 20,
-//       image: "/api/placeholder/300/200",
-//       color: "bg-green-100",
-//     },
-//     {
-//       id: 3,
-//       name: "Digital Learning Hub",
-//       totalMembers: 220,
-//       students: 150,
-//       volunteers: 50,
-//       specialEducators: 20,
-//       image: "/api/placeholder/300/200",
-//       color: "bg-purple-100",
-//     },
-//     {
-//       id: 4,
-//       name: "Reading & Literature",
-//       totalMembers: 220,
-//       students: 150,
-//       volunteers: 50,
-//       specialEducators: 20,
-//       image: "/api/placeholder/300/200",
-//       color: "bg-orange-100",
-//     },
-//     {
-//       id: 5,
-//       name: "Science & Discovery",
-//       totalMembers: 220,
-//       students: 150,
-//       volunteers: 50,
-//       specialEducators: 20,
-//       image: "/api/placeholder/300/200",
-//       color: "bg-teal-100",
-//     },
-//     {
-//       id: 6,
-//       name: "Music & Performance",
-//       totalMembers: 220,
-//       students: 150,
-//       volunteers: 50,
-//       specialEducators: 20,
-//       image: "/api/placeholder/300/200",
-//       color: "bg-pink-100",
-//     },
-//   ];
+//   // New state for approval dialog
+//   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
+//   const [pendingProgrammes, setPendingProgrammes] = useState([]);
 
-//   // Load programmes on component mount
+//   // Load programmes on component mount and when group ID changes
 //   useEffect(() => {
 //     loadProgrammes();
-//   }, [groupId]);
+//   }, [groupId, role]); // Depend on role to refetch if role changes (though typically page reloads)
 
 //   const loadProgrammes = async () => {
 //     try {
 //       setLoadingProgrammes(true);
-//       const result = await programmeAPI.getAll(groupId);
+//       const result = await programmeAPI.getAll(groupId); // API will now handle role-based filtering
 //       if (result.success) {
-//         setProgrammes(result.data);
+//         // Separate pending programmes for admin/expert view
+//         if (role === "admin" || role === "expert") {
+//           setProgrammes(result.data); // Admins/Experts see all, filter pending for dialog
+//           setPendingProgrammes(result.data.filter(p => p.approvalStatus === "PENDING"));
+//         } else {
+//           // Other roles (student, volunteer) see what the API returns based on their permissions
+//           setProgrammes(result.data);
+//           setPendingProgrammes([]); // No pending for other roles to review
+//         }
 //       } else {
 //         console.error("Failed to load programmes:", result.error);
-//         // Use static data as fallback
-//         setProgrammes(staticProgrammesData);
+//         setProgrammes([]); // No static fallback, rely on actual data
+//         setPendingProgrammes([]);
 //       }
 //     } catch (error) {
 //       console.error("Error loading programmes:", error);
-//       // Use static data as fallback
-//       setProgrammes(staticProgrammesData);
+//       setProgrammes([]); // No static fallback, rely on actual data
+//       setPendingProgrammes([]);
 //     } finally {
 //       setLoadingProgrammes(false);
 //     }
@@ -150,7 +99,6 @@
 //     });
 //     setError("");
 //     setSuccess("");
-//     // Trigger image upload reset
 //     setResetImageUpload(Date.now());
 //   };
 
@@ -162,7 +110,6 @@
 //     }));
 //   };
 
-//   // Handle image upload callbacks
 //   const handleImageSelect = (file) => {
 //     console.log("Image selected:", file.name);
 //   };
@@ -181,13 +128,10 @@
 //   };
 
 //   const validateForm = () => {
-//     // Check if name is provided
 //     if (!formData.name.trim()) {
 //       setError("Programme name is required");
 //       return false;
 //     }
-
-//     // Check if name is at least 3 characters long
 //     if (formData.name.trim().length < 3) {
 //       setError("Programme name must be at least 3 characters long");
 //       return false;
@@ -201,12 +145,10 @@
 //       setError("Numbers cannot be negative");
 //       return false;
 //     }
-
 //     if (students === 0 && volunteers === 0 && specialEducators === 0) {
 //       setError("At least one field must be greater than 0");
 //       return false;
 //     }
-
 //     return true;
 //   };
 
@@ -235,8 +177,7 @@
 
 //       if (result.success) {
 //         setSuccess("Programme created successfully!");
-//         // Reload programmes to show the new one
-//         await loadProgrammes();
+//         await loadProgrammes(); // Reload programmes to show the new one with its status
 //         setTimeout(() => {
 //           handleClose();
 //         }, 1500);
@@ -251,14 +192,9 @@
 //     }
 //   };
 
-//   // Handle programme click - can be used to navigate to programme details
 //   const handleProgrammeClick = (programmeId) => {
-//     // Fixed: Include role in the route
 //     router.push(`/${role}/groups/${groupId}/programmes/${programmeId}`);
 //   };
-
-//   const displayProgrammes =
-//     programmes.length > 0 ? programmes : staticProgrammesData;
 
 //   return (
 //     <div className="p-8 bg-gray-50 min-h-screen">
@@ -274,15 +210,25 @@
 //           <ChevronRight className="text-gray-800" size={20} />
 //           <h1 className="font-bold text-gray-800">All Programmes</h1>
 //         </div>
-//         {(role === "volunteer" || role === "expert" || role === "admin") && (
-//           <button
-//             onClick={handleOpen}
-//             className="flex items-center text-sm space-x-2 bg-[#2F699A] text-white px-4 py-2 rounded-lg hover:bg-[#25547b] transition-colors"
-//           >
-//             <Plus size={18} />
-//             <span>Add Programmes</span>
-//           </button>
-//         )}
+//         <div className="flex space-x-4"> {/* Added a div for buttons */}
+//           {(role === "admin" || role === "expert") && pendingProgrammes.length > 0 && (
+//             <button
+//               onClick={() => setApprovalDialogOpen(true)}
+//               className="flex items-center text-sm space-x-2 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors"
+//             >
+//               <span>Review Programmes ({pendingProgrammes.length})</span>
+//             </button>
+//           )}
+//           {(role === "volunteer" || role === "expert" || role === "admin") && (
+//             <button
+//               onClick={handleOpen}
+//               className="flex items-center text-sm space-x-2 bg-[#2F699A] text-white px-4 py-2 rounded-lg hover:bg-[#25547b] transition-colors"
+//             >
+//               <Plus size={18} />
+//               <span>Add Programmes</span>
+//             </button>
+//           )}
+//         </div>
 //       </div>
 
 //       {/* Loading State */}
@@ -292,72 +238,106 @@
 //         </div>
 //       ) : (
 //         /* Programmes Grid - 3 cards per row */
-//         <div className="grid grid-cols-3 gap-8">
-//           {displayProgrammes.map((programme) => {
-//             const totalMembers =
-//               programme.totalMembers ||
-//               programme.students +
+//         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+//           {programmes.length === 0 ? (
+//             <Typography variant="h6" color="text.secondary" className="col-span-full text-center py-10">
+//               No programmes found for this group.
+//             </Typography>
+//           ) : (
+//             programmes.map((programme) => {
+//               const totalMembers =
+//                 programme.students +
 //                 programme.volunteers +
 //                 programme.specialEducators;
 
-//             return (
-//               <div
-//                 key={programme.id}
-//                 className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden"
-//               >
-//                 {/* Programme Content */}
-//                 <div className="px-6 py-10">
-//                   {/* Programme Name */}
-//                   <div className="text-center mb-6">
-//                     <h2 className="font-bold text-lg text-gray-800 mb-2">
-//                       {programme.name}
-//                     </h2>
-//                   </div>
+//               // Determine chip color based on approval status
+//               let chipColor = "default";
+//               let chipLabel = programme.approvalStatus;
+//               if (programme.approvalStatus === "PENDING") {
+//                 chipColor = "warning";
+//               } else if (programme.approvalStatus === "APPROVED") {
+//                 chipColor = "success";
+//               } else if (programme.approvalStatus === "REJECTED") {
+//                 chipColor = "error";
+//               }
 
-//                   {/* Image and Info Side by Side */}
-//                   <div className="flex items-center justify-center space-x-4 mb-6">
-//                     {/* Programme Image in Circle */}
-//                     <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-//                       <img
-//                         src={
-//                           programme.image ||
-//                           programme.imageUrl ||
-//                           "/api/placeholder/300/200"
-//                         }
-//                         alt={programme.name || "Programme"}
-//                         className="w-12 h-12 object-cover rounded-full"
-//                       />
+//               // Decide whether to show the card based on the role and approval status
+//               const shouldShowCard =
+//                 role === "admin" ||
+//                 role === "expert" ||
+//                 (role === "volunteer" && (programme.createdById === params.user?.id || programme.approvalStatus === "APPROVED")) || // Check createdById for volunteer's own items
+//                 (role === "student" && programme.approvalStatus === "APPROVED");
+
+//               if (!shouldShowCard) return null; // Don't render if not allowed
+
+//               return (
+//                 <div
+//                   key={programme.id}
+//                   className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden relative" // Added relative for positioning chip
+//                 >
+//                   {/* Approval Status Chip for Admins, Experts, and Volunteers (for their own) */}
+//                   {(role === "admin" || role === "expert" || (role === "volunteer" && programme.createdById === params.user?.id)) && (
+//                     <Chip
+//                       label={chipLabel}
+//                       color={chipColor}
+//                       size="small"
+//                       sx={{ position: 'absolute', top: 12, right: 12, zIndex: 1 }}
+//                     />
+//                   )}
+
+//                   {/* Programme Content */}
+//                   <div className="px-6 py-10">
+//                     {/* Programme Name */}
+//                     <div className="text-center mb-6">
+//                       <h2 className="font-bold text-lg text-gray-800 mb-2">
+//                         {programme.name}
+//                       </h2>
 //                     </div>
 
-//                     {/* Programme Info */}
-//                     <div className="flex-1">
-//                       <div className="mb-3">
-//                         <h3 className="font-semibold text-gray-800 text-sm mb-1">
-//                           Total Members : {totalMembers}
-//                         </h3>
+//                     {/* Image and Info Side by Side */}
+//                     <div className="flex items-center justify-center space-x-4 mb-6">
+//                       {/* Programme Image in Circle */}
+//                       <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+//                         <img
+//                           src={
+//                             programme.imageUrl ||
+//                             "/api/placeholder/300/200"
+//                           }
+//                           alt={programme.name || "Programme"}
+//                           className="w-12 h-12 object-cover rounded-full"
+//                         />
 //                       </div>
 
-//                       <div className="space-y-1 text-xs text-gray-600">
-//                         <div>Students : {programme.students}</div>
-//                         <div>Volunteers : {programme.volunteers}</div>
-//                         <div>
-//                           Special Educators : {programme.specialEducators}
+//                       {/* Programme Info */}
+//                       <div className="flex-1">
+//                         <div className="mb-3">
+//                           <h3 className="font-semibold text-gray-800 text-sm mb-1">
+//                             Total Members : {totalMembers}
+//                           </h3>
+//                         </div>
+
+//                         <div className="space-y-1 text-xs text-gray-600">
+//                           <div>Students : {programme.students}</div>
+//                           <div>Volunteers : {programme.volunteers}</div>
+//                           <div>
+//                             Special Educators : {programme.specialEducators}
+//                           </div>
 //                         </div>
 //                       </div>
 //                     </div>
-//                   </div>
 
-//                   {/* See Details Button */}
-//                   <button
-//                     onClick={() => handleProgrammeClick(programme.id)}
-//                     className="w-full bg-[#2F699A] text-sm text-white py-3 rounded-lg hover:bg-[#25547b] transition-colors font-medium"
-//                   >
-//                     See Details
-//                   </button>
+//                     {/* See Details Button */}
+//                     <button
+//                       onClick={() => handleProgrammeClick(programme.id)}
+//                       className="w-full bg-[#2F699A] text-sm text-white py-3 rounded-lg hover:bg-[#25547b] transition-colors font-medium"
+//                     >
+//                       See Details
+//                     </button>
+//                   </div>
 //                 </div>
-//               </div>
-//             );
-//           })}
+//               );
+//             })
+//           )}
 //         </div>
 //       )}
 
@@ -425,8 +405,7 @@
 //             )}
 
 //             <Grid container spacing={3}>
-//               {/* Programme Name Field */}
-//               <Grid size={12}>
+//               <Grid item size={{xs:12}}> {/* Use item for Grid */}
 //                 <TextField
 //                   name="name"
 //                   label="Programme Name"
@@ -450,7 +429,7 @@
 //                 />
 //               </Grid>
 
-//               <Grid size={{ xs: 12, sm: 6 }}>
+//               <Grid item size={{xs:12, sm:6}}> {/* Use item for Grid */}
 //                 <TextField
 //                   name="students"
 //                   label="Number of Students"
@@ -475,7 +454,7 @@
 //                 />
 //               </Grid>
 
-//               <Grid size={{ xs: 12, sm: 6 }}>
+//               <Grid item size={{xs:12, sm:6}}> {/* Use item for Grid */}
 //                 <TextField
 //                   name="volunteers"
 //                   label="Number of Volunteers"
@@ -500,7 +479,7 @@
 //                 />
 //               </Grid>
 
-//               <Grid size={12}>
+//               <Grid item size={{xs:12}}> {/* Use item for Grid */}
 //                 <TextField
 //                   name="specialEducators"
 //                   label="Special Educators"
@@ -525,8 +504,7 @@
 //                 />
 //               </Grid>
 
-//               {/* Replace Image URL field with ImageUpload component */}
-//               <Grid size={12}>
+//               <Grid item size={{xs:12}}> {/* Use item for Grid */}
 //                 <Box>
 //                   <Typography
 //                     variant="body2"
@@ -596,6 +574,16 @@
 //           </DialogActions>
 //         </form>
 //       </Dialog>
+
+//       {/* Approval Programmes Dialog */}
+//       {(role === "admin" || role === "expert") && (
+//         <ApprovalProgrammesDialog
+//           open={approvalDialogOpen}
+//           onClose={() => setApprovalDialogOpen(false)}
+//           pendingProgrammes={pendingProgrammes}
+//           onApprovalStatusChange={loadProgrammes} // Reload programmes after approval/rejection
+//         />
+//       )}
 //     </div>
 //   );
 // };
@@ -620,19 +608,22 @@ import {
   CircularProgress,
   Alert,
   IconButton,
-  Chip // Import Chip for status display
+  Tooltip, // Added for rejection message tooltip
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
 import CloseIcon from "@mui/icons-material/Close";
-import { programmeAPI } from "@/lib/api"; // Ensure programmeAPI is configured
+import { Info } from "@mui/icons-material"; // Added for rejection message icon
+import { programmeAPI } from "@/lib/api";
+import { useSession } from "next-auth/react"; // Added for session access
 import ImageUpload from "@/app/components/ImageUpload";
-import ApprovalProgrammesDialog from "./ApprovalProgrammesDialog"; // New: Import the approval dialog
+import ApprovalProgrammesDialog from "./ApprovalProgrammesDialog";
 
 const Programmes = () => {
   const params = useParams();
   const router = useRouter();
-  const role = params.role; // Get role from URL params
-  const groupId = params.id; // Get group ID from URL params
+  const role = params.role;
+  const groupId = params.id;
+  const { data: session } = useSession(); // Added session hook
 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -649,38 +640,44 @@ const Programmes = () => {
     imageUrl: "",
   });
 
-  // New state for approval dialog
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
-  const [pendingProgrammes, setPendingProgrammes] = useState([]);
 
-  // Load programmes on component mount and when group ID changes
   useEffect(() => {
     loadProgrammes();
-  }, [groupId, role]); // Depend on role to refetch if role changes (though typically page reloads)
+  }, [groupId, role]);
 
   const loadProgrammes = async () => {
     try {
       setLoadingProgrammes(true);
-      const result = await programmeAPI.getAll(groupId); // API will now handle role-based filtering
+      const result = await programmeAPI.getAll(groupId);
       if (result.success) {
-        // Separate pending programmes for admin/expert view
-        if (role === "admin" || role === "expert") {
-          setProgrammes(result.data); // Admins/Experts see all, filter pending for dialog
-          setPendingProgrammes(result.data.filter(p => p.approvalStatus === "PENDING"));
+        // Filter programmes based on role (similar to groups logic)
+        if (session?.user?.role === "admin" || session?.user?.role === "expert") {
+          setProgrammes(result.data); // Admins/Experts see all, including pending/rejected
+        } else if (session?.user?.role === "volunteer") {
+          // Volunteers see their created programmes (any status) and approved programmes
+          setProgrammes(
+            result.data.filter(
+              (programme) =>
+                programme.createdById === session.user.id ||
+                programme.approvalStatus === "APPROVED"
+            )
+          );
+        } else if (session?.user?.role === "student") {
+          // Students only see approved programmes
+          setProgrammes(
+            result.data.filter((programme) => programme.approvalStatus === "APPROVED")
+          );
         } else {
-          // Other roles (student, volunteer) see what the API returns based on their permissions
-          setProgrammes(result.data);
-          setPendingProgrammes([]); // No pending for other roles to review
+          setProgrammes([]);
         }
       } else {
         console.error("Failed to load programmes:", result.error);
-        setProgrammes([]); // No static fallback, rely on actual data
-        setPendingProgrammes([]);
+        setProgrammes([]);
       }
     } catch (error) {
       console.error("Error loading programmes:", error);
-      setProgrammes([]); // No static fallback, rely on actual data
-      setPendingProgrammes([]);
+      setProgrammes([]);
     } finally {
       setLoadingProgrammes(false);
     }
@@ -781,7 +778,7 @@ const Programmes = () => {
 
       if (result.success) {
         setSuccess("Programme created successfully!");
-        await loadProgrammes(); // Reload programmes to show the new one with its status
+        await loadProgrammes();
         setTimeout(() => {
           handleClose();
         }, 1500);
@@ -796,8 +793,128 @@ const Programmes = () => {
     }
   };
 
-  const handleProgrammeClick = (programmeId) => {
-    router.push(`/${role}/groups/${groupId}/programmes/${programmeId}`);
+  const handleProgrammeClick = (programme) => {
+    if (programme.approvalStatus === "APPROVED") {
+      router.push(`/${role}/groups/${groupId}/programmes/${programme.id}`);
+    }
+  };
+
+  // Separate programmes into approved and pending/rejected
+  const approvedProgrammes = programmes.filter(
+    (programme) => programme.approvalStatus === "APPROVED"
+  );
+  const pendingRejectedProgrammes = programmes.filter(
+    (programme) =>
+      programme.approvalStatus === "PENDING" || programme.approvalStatus === "REJECTED"
+  );
+
+  const pendingProgrammesCount = programmes.filter(
+    (programme) => programme.approvalStatus === "PENDING"
+  ).length;
+
+  const renderProgrammeCard = (programme) => {
+    const totalMembers =
+      programme.students + programme.volunteers + programme.specialEducators;
+
+    return (
+      <div
+        key={programme.id}
+        className={`bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden relative ${
+          programme.approvalStatus === "APPROVED" ? "cursor-pointer" : ""
+        }`}
+        // onClick={() => handleProgrammeClick(programme)}
+      >
+        {/* Approval Status Overlay */}
+        {session?.user?.role !== "student" && programme.approvalStatus !== "APPROVED" && (
+          <div
+            className={`absolute top-2 left-2 px-2 py-1 rounded-md text-xs font-bold
+              ${
+                programme.approvalStatus === "PENDING"
+                  ? "bg-yellow-500 text-white"
+                  : "bg-red-500 text-white"
+              }`}
+          >
+            {programme.approvalStatus}
+          </div>
+        )}
+
+        {/* Rejection Message Tooltip for Volunteers */}
+        {programme.approvalStatus === "REJECTED" &&
+          session?.user?.role === "volunteer" &&
+          programme.createdById === session.user.id &&
+          programme.rejectionMessage && (
+            <Tooltip title={`Reason: ${programme.rejectionMessage}`} arrow>
+              <IconButton
+                size="small"
+                className="absolute top-1 left-80 text-white bg-gray-800 bg-opacity-50 hover:bg-opacity-70"
+              >
+                <Info size={18} className="text-red-500" />
+              </IconButton>
+            </Tooltip>
+          )}
+
+        {/* Programme Content */}
+        <div className="px-6 py-8">
+          {/* Programme Name */}
+          <div className="text-center mb-6">
+            <h2 className="font-bold text-lg text-gray-800 mb-2">
+              {programme.name}
+            </h2>
+            {/* Display created by info for volunteers (their own pending/rejected) */}
+            {session?.user?.role === "volunteer" &&
+              programme.createdById === session.user.id &&
+              programme.approvalStatus !== "APPROVED" && (
+                <p className="text-xs text-gray-500">
+                  Created by: {programme.createdBy?.name || "You"}
+                </p>
+              )}
+          </div>
+
+          {/* Image and Info Side by Side */}
+          <div className="flex items-center justify-center space-x-4 mb-6">
+            {/* Programme Image in Circle */}
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <img
+                src={programme.imageUrl || "/api/placeholder/300/200"}
+                alt={programme.name || "Programme"}
+                className="w-12 h-12 object-cover rounded-full"
+              />
+            </div>
+
+            {/* Programme Info */}
+            <div className="flex-1">
+              <div className="mb-3">
+                <h3 className="font-semibold text-gray-800 text-sm mb-1">
+                  Total Members : {totalMembers}
+                </h3>
+              </div>
+
+              <div className="space-y-1 text-xs text-gray-600">
+                <div>Students : {programme.students}</div>
+                <div>Volunteers : {programme.volunteers}</div>
+                <div>Special Educators : {programme.specialEducators}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* See Details Button */}
+          <button
+            // onClick={(e) => {
+            //   e.stopPropagation();
+            //   handleProgrammeClick(programme);
+            // }}
+            className={`w-full text-sm py-3 rounded-lg font-medium transition-colors ${
+              programme.approvalStatus === "APPROVED"
+                ? "bg-[#2F699A] text-white hover:bg-[#25547b]"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
+            disabled={programme.approvalStatus !== "APPROVED"}
+          >
+            See Details
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -814,15 +931,7 @@ const Programmes = () => {
           <ChevronRight className="text-gray-800" size={20} />
           <h1 className="font-bold text-gray-800">All Programmes</h1>
         </div>
-        <div className="flex space-x-4"> {/* Added a div for buttons */}
-          {(role === "admin" || role === "expert") && pendingProgrammes.length > 0 && (
-            <button
-              onClick={() => setApprovalDialogOpen(true)}
-              className="flex items-center text-sm space-x-2 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors"
-            >
-              <span>Review Programmes ({pendingProgrammes.length})</span>
-            </button>
-          )}
+        <div className="flex items-center space-x-4">
           {(role === "volunteer" || role === "expert" || role === "admin") && (
             <button
               onClick={handleOpen}
@@ -830,6 +939,20 @@ const Programmes = () => {
             >
               <Plus size={18} />
               <span>Add Programmes</span>
+            </button>
+          )}
+
+          {(role === "admin" || role === "expert") && (
+            <button
+              onClick={() => setApprovalDialogOpen(true)}
+              className="flex items-center text-sm space-x-2 bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors relative"
+            >
+              <span>Approval Programmes</span>
+              {pendingProgrammesCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {pendingProgrammesCount}
+                </span>
+              )}
             </button>
           )}
         </div>
@@ -841,108 +964,36 @@ const Programmes = () => {
           <CircularProgress size={40} sx={{ color: "#2F699A" }} />
         </div>
       ) : (
-        /* Programmes Grid - 3 cards per row */
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-          {programmes.length === 0 ? (
-            <Typography variant="h6" color="text.secondary" className="col-span-full text-center py-10">
+        <>
+          {/* Approved Programmes Section */}
+          {approvedProgrammes.length > 0 && (
+            <div className="mb-12">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+                {approvedProgrammes.map(renderProgrammeCard)}
+              </div>
+            </div>
+          )}
+
+          {/* Pending/Rejected Programmes Section */}
+          {pendingRejectedProgrammes.length > 0 && (
+            <div className="mb-8">
+              <div className="flex items-center space-x-0 mb-6">
+                <h1 className="font-bold text-gray-800">Pending / Rejected Programmes</h1>
+                <ChevronRight className="text-gray-800" size={20} />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+                {pendingRejectedProgrammes.map(renderProgrammeCard)}
+              </div>
+            </div>
+          )}
+
+          {/* No Programmes Message */}
+          {approvedProgrammes.length === 0 && pendingRejectedProgrammes.length === 0 && (
+            <Typography variant="h6" color="text.secondary" className="text-center py-10">
               No programmes found for this group.
             </Typography>
-          ) : (
-            programmes.map((programme) => {
-              const totalMembers =
-                programme.students +
-                programme.volunteers +
-                programme.specialEducators;
-
-              // Determine chip color based on approval status
-              let chipColor = "default";
-              let chipLabel = programme.approvalStatus;
-              if (programme.approvalStatus === "PENDING") {
-                chipColor = "warning";
-              } else if (programme.approvalStatus === "APPROVED") {
-                chipColor = "success";
-              } else if (programme.approvalStatus === "REJECTED") {
-                chipColor = "error";
-              }
-
-              // Decide whether to show the card based on the role and approval status
-              const shouldShowCard =
-                role === "admin" ||
-                role === "expert" ||
-                (role === "volunteer" && (programme.createdById === params.user?.id || programme.approvalStatus === "APPROVED")) || // Check createdById for volunteer's own items
-                (role === "student" && programme.approvalStatus === "APPROVED");
-
-              if (!shouldShowCard) return null; // Don't render if not allowed
-
-              return (
-                <div
-                  key={programme.id}
-                  className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden relative" // Added relative for positioning chip
-                >
-                  {/* Approval Status Chip for Admins, Experts, and Volunteers (for their own) */}
-                  {(role === "admin" || role === "expert" || (role === "volunteer" && programme.createdById === params.user?.id)) && (
-                    <Chip
-                      label={chipLabel}
-                      color={chipColor}
-                      size="small"
-                      sx={{ position: 'absolute', top: 12, right: 12, zIndex: 1 }}
-                    />
-                  )}
-
-                  {/* Programme Content */}
-                  <div className="px-6 py-10">
-                    {/* Programme Name */}
-                    <div className="text-center mb-6">
-                      <h2 className="font-bold text-lg text-gray-800 mb-2">
-                        {programme.name}
-                      </h2>
-                    </div>
-
-                    {/* Image and Info Side by Side */}
-                    <div className="flex items-center justify-center space-x-4 mb-6">
-                      {/* Programme Image in Circle */}
-                      <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <img
-                          src={
-                            programme.imageUrl ||
-                            "/api/placeholder/300/200"
-                          }
-                          alt={programme.name || "Programme"}
-                          className="w-12 h-12 object-cover rounded-full"
-                        />
-                      </div>
-
-                      {/* Programme Info */}
-                      <div className="flex-1">
-                        <div className="mb-3">
-                          <h3 className="font-semibold text-gray-800 text-sm mb-1">
-                            Total Members : {totalMembers}
-                          </h3>
-                        </div>
-
-                        <div className="space-y-1 text-xs text-gray-600">
-                          <div>Students : {programme.students}</div>
-                          <div>Volunteers : {programme.volunteers}</div>
-                          <div>
-                            Special Educators : {programme.specialEducators}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* See Details Button */}
-                    <button
-                      onClick={() => handleProgrammeClick(programme.id)}
-                      className="w-full bg-[#2F699A] text-sm text-white py-3 rounded-lg hover:bg-[#25547b] transition-colors font-medium"
-                    >
-                      See Details
-                    </button>
-                  </div>
-                </div>
-              );
-            })
           )}
-        </div>
+        </>
       )}
 
       {/* Add Programme Dialog */}
@@ -1009,7 +1060,7 @@ const Programmes = () => {
             )}
 
             <Grid container spacing={3}>
-              <Grid item size={{xs:12}}> {/* Use item for Grid */}
+              <Grid item size={{ xs: 12 }}>
                 <TextField
                   name="name"
                   label="Programme Name"
@@ -1033,7 +1084,7 @@ const Programmes = () => {
                 />
               </Grid>
 
-              <Grid item size={{xs:12, sm:6}}> {/* Use item for Grid */}
+              <Grid item size={{ xs: 12, sm: 6 }}>
                 <TextField
                   name="students"
                   label="Number of Students"
@@ -1058,7 +1109,7 @@ const Programmes = () => {
                 />
               </Grid>
 
-              <Grid item size={{xs:12, sm:6}}> {/* Use item for Grid */}
+              <Grid item size={{ xs: 12, sm: 6 }}>
                 <TextField
                   name="volunteers"
                   label="Number of Volunteers"
@@ -1083,7 +1134,7 @@ const Programmes = () => {
                 />
               </Grid>
 
-              <Grid item size={{xs:12}}> {/* Use item for Grid */}
+              <Grid item size={{ xs: 12 }}>
                 <TextField
                   name="specialEducators"
                   label="Special Educators"
@@ -1108,7 +1159,7 @@ const Programmes = () => {
                 />
               </Grid>
 
-              <Grid item size={{xs:12}}> {/* Use item for Grid */}
+              <Grid item size={{ xs: 12 }}>
                 <Box>
                   <Typography
                     variant="body2"
@@ -1184,8 +1235,10 @@ const Programmes = () => {
         <ApprovalProgrammesDialog
           open={approvalDialogOpen}
           onClose={() => setApprovalDialogOpen(false)}
-          pendingProgrammes={pendingProgrammes}
-          onApprovalStatusChange={loadProgrammes} // Reload programmes after approval/rejection
+          pendingProgrammes={programmes.filter(
+            (programme) => programme.approvalStatus === "PENDING"
+          )}
+          onApprovalStatusChange={loadProgrammes}
         />
       )}
     </div>

@@ -120,7 +120,7 @@ export default function ApprovalGroupsDialog({ open, onClose, pendingGroups, onA
                 {pendingGroups.map((group) => (
                   <ListItem
                     key={group.id}
-                    button
+                    button='true'
                     onClick={() => handleGroupSelect(group)}
                     selected={selectedGroup?.id === group.id}
                     sx={{ mb: 1, borderRadius: '8px', '&.Mui-selected': { backgroundColor: '#e0f2f7' } }}
