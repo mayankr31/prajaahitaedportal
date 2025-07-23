@@ -1011,6 +1011,7 @@ const VolunteersPage = () => {
                   onFeedbackClick={handleFeedbackClick}
                   onAssignedStudentsClick={handleAssignedStudentsClick}
                   role={role}
+                  onDelete={handleVolunteerDelete}
                 />
               ))
             )}

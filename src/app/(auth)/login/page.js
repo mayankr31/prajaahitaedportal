@@ -491,13 +491,13 @@ export default function LoginPage() {
       <div className="w-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl w-full">
           <div className="bg-white rounded-lg shadow-xl overflow-hidden px-20 py-10">
-            <div className="flex flex-col lg:flex-row ">
+            <div className="flex flex-col lg:flex-row justify-center items-center ">
               {/* Left side - 40% white for logo */}
               <div className="lg:w-2/5 p-8 lg:p-12 flex items-center justify-center">
                 <div className="mb-8">
                   <Image
-                    src="/prajaahitalogin.png"
-                    alt="Prajaahita login"
+                    src="/soilLogo.png"
+                    alt="Soil login"
                     width={320}
                     height={80}
                     priority

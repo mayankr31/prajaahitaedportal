@@ -840,6 +840,7 @@ const ExpertsPage = () => {
                   onFeedbackClick={handleFeedbackClick}
                   onVolunteersClick={handleAssignedVolunteersClick}
                   role={role}
+                  onDelete={handleExpertDelete}
                 />
               ))
             )}
